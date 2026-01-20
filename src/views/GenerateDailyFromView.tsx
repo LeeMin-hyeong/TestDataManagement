@@ -25,7 +25,7 @@ export default function GenerateDailyFormView({ meta }: ViewProps) {
         await dialog.confirm({ title: "성공", message: "데일리테스트 기록 양식을 생성하였습니다." });
         setGenerated(true);
       } else {
-        await dialog.error({title: "학생 정보 파일 생성 실패", message: res?.error || "" });
+        await dialog.error({title: "학생 정보 파일 생성 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

@@ -315,9 +315,9 @@ export default function ManageStudentView({ meta }: ViewProps) {
         setStudentsByClass(nextStudents);
         setSelectedStudentId("");
       } else if (!dfRes?.ok) {
-        await dialog.error({ title: "Datafile load failed", message: dfRes?.error || "" });
+        await dialog.error({ title: "Datafile load failed", message: dfRes?.error || "", detail: dfRes?.detail });
       } else if (!aisosicRes?.ok) {
-        await dialog.error({ title: "Aisosic load failed", message: aisosicRes?.error || "" });
+        await dialog.error({ title: "Aisosic load failed", message: aisosicRes?.error || "", detail: aisosicRes?.detail });
       }
     } catch (e) {
       setClasses([]);
@@ -377,7 +377,7 @@ export default function ManageStudentView({ meta }: ViewProps) {
           await dialog.confirm({ title: "완료", message: "학생이 반에 추가되었습니다." });
         }
       } else {
-        await dialog.error({ title: "학생 추가 실패", message: res?.error || "" });
+        await dialog.error({ title: "학생 추가 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });
@@ -409,7 +409,7 @@ export default function ManageStudentView({ meta }: ViewProps) {
       if (res?.ok) {
         await dialog.confirm({ title: "완료", message: `${selectedStudent.name} 학생을 ${selectedStudent.className} 반으로 이동하였습니다.` });
       } else {
-        await dialog.error({ title: "학생 반 이동 실패", message: res?.error || "" });
+        await dialog.error({ title: "학생 반 이동 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });
@@ -439,7 +439,7 @@ export default function ManageStudentView({ meta }: ViewProps) {
       if (res?.ok) {
         await dialog.confirm({ title: "완료", message: `${selectedStudent.name} 학생이 삭제되었습니다.` });
       } else {
-        await dialog.error({ title: "학생 삭제 실패", message: res?.error || "" });
+        await dialog.error({ title: "학생 삭제 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

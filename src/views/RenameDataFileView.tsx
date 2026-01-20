@@ -61,7 +61,7 @@ export default function RenameDataFileView() {
         await dialog.confirm({ title: "성공", message: `데이터 파일명을 ${dataName}(으)로 변경하였습니다.` });
         setDone(true);
       } else {
-        await dialog.error({ title: "데이터 파일명 변경 실패", message: res.error || "" });
+        await dialog.error({ title: "데이터 파일명 변경 실패", message: res.error || "", detail: res.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

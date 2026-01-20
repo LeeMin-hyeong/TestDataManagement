@@ -155,7 +155,7 @@ export default function OmikronPanel({ onAction, width = 1400, height = 830, sid
         await dialog.confirm({title: "성공", message: "데이터 저장 위치를 변경하였습니다."})
       } else {
         if (res?.error){
-          await dialog.error({title: "데이터 저장 위치 변경 실패", message: res?.error});
+          await dialog.error({title: "데이터 저장 위치 변경 실패", message: res?.error, detail: res?.detail});
         }
       }
     } catch (e: any) {

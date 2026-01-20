@@ -33,7 +33,7 @@ export default function ReapplyConditionalFormatView({ meta }: ViewProps) {
         }
         setDone(true);
       } else {
-        await dialog.error({ title: "조건부 서식 재지정 실패", message: res?.error || "" });
+        await dialog.error({ title: "조건부 서식 재지정 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

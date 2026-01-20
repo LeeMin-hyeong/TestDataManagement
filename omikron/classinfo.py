@@ -1,5 +1,6 @@
 import os
 import openpyxl as xl
+import zipfile
 
 from datetime import datetime
 from openpyxl.utils.cell import get_column_letter as gcl
@@ -10,7 +11,7 @@ import omikron.chrome
 import omikron.config
 
 from omikron.defs import ClassInfo
-from omikron.exception import NoMatchingSheetException, FileOpenException
+from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
 from omikron.progress import Progress
 from omikron.style import BORDER_ALL, ALIGN_CENTER, ALIGN_CENTER_WRAP
 
@@ -51,7 +52,12 @@ def make_file():
     save(wb)
 
 def open(data_only:bool=True, read_only:bool=True) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    try:
+        return xl.load_workbook(f"{omikron.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    except PermissionError:
+        raise ReopenFileException(f"{ClassInfo.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+    except zipfile.BadZipFile:
+        raise ReopenFileException(f"{ClassInfo.DEFAULT_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
 
 def open_temp(data_only:bool=True, read_only:bool=True) -> xl.Workbook:
     return xl.load_workbook(f"{omikron.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)

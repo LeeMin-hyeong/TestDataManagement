@@ -10,3 +10,9 @@ class FileOpenException(Exception):
     파일이 열려 있어 작업을 수행할 수 없음
     """
     pass
+
+class ReopenFileException(Exception):
+    """
+    zipfile.BadZipFile
+    """
+    pass

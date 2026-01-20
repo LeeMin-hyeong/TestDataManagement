@@ -72,7 +72,7 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
       const res = await rpc.call("open_file_picker", {})
       if (!res?.ok) {
         if (res?.error) {
-          await dialog.error({ title: "파일 선택 실패", message: res.error })
+          await dialog.error({ title: "파일 선택 실패", message: res.error, detail: res.detail })
         }
         return
       }
@@ -105,7 +105,7 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
       const checked = await rpc.call("check_aisosic_difference", {});
       if (!checked?.ok) {
         setPrecheckStatus("idle")
-        await dialog.error({ title: "오류", message: checked?.error || "비교 중 오류가 발생했습니다." })
+        await dialog.error({ title: "오류", message: checked?.error || "비교 중 오류가 발생했습니다.", detail: checked?.detail })
         return
       }
       setPrecheckStatus("done")
