@@ -1,5 +1,6 @@
 import os
 import openpyxl as xl
+import zipfile
 
 from datetime import datetime
 from openpyxl.utils.cell import get_column_letter as gcl
@@ -10,7 +11,7 @@ import omikron.studentinfo
 import omikron.config
 
 from omikron.defs import MakeupTestList, DataForm
-from omikron.exception import NoMatchingSheetException, FileOpenException
+from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
 from omikron.util import calculate_makeup_test_schedule
 from omikron.progress import Progress
 from omikron.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, FILL_NEW_STUDENT, BORDER_ALL
@@ -41,7 +42,14 @@ def make_file():
     wb.save(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx")
 
 def open(data_only:bool=False) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx", data_only=data_only)
+    try:
+        return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx", data_only=data_only)
+    except PermissionError:
+        raise ReopenFileException(f"{MakeupTestList.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+    except zipfile.BadZipFile:
+        raise ReopenFileException(f"{MakeupTestList.DEFAULT_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+    except FileNotFoundError:
+        raise FileNotFoundError(f"{MakeupTestList.DEFAULT_NAME} 파일이 존재하지 않습니다.\n데이터 저장 시 재시험자가 발생하면 자동으로 생성됩니다.")
 
 def open_worksheet(wb:xl.Workbook):
     try:

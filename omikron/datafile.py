@@ -2,6 +2,7 @@ import os
 import openpyxl as xl
 import pythoncom       # only works in Windows
 import win32com.client # only works in Windows
+import zipfile
 
 from datetime import datetime
 from openpyxl.utils.cell import get_column_letter as gcl
@@ -15,7 +16,7 @@ import omikron.dataform
 import omikron.studentinfo
 
 from omikron.defs import DataFile, DataForm
-from omikron.exception import NoMatchingSheetException, FileOpenException
+from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
 from omikron.util import copy_cell, class_average_color, student_average_color, test_score_color
 from omikron.progress import Progress
 from omikron.style import BORDER_BOTTOM_MEDIUM_000, BORDER_BOTTOM_THIN_9090, BORDER_TOP_THIN_9090_BOTTOM_MEDIUM_000, BORDER_TOP_MEDIUM_000
@@ -108,7 +109,12 @@ def make_file():
     save(wb)
 
 def open(data_only:bool=False, read_only:bool=False) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    try:
+        return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    except PermissionError:
+        raise ReopenFileException(f"{omikron.config.DATA_FILE_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+    except zipfile.BadZipFile:
+        raise ReopenFileException(f"{omikron.config.DATA_FILE_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
 
 def open_temp(data_only:bool=False, read_only:bool=False) -> xl.Workbook:
     return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)

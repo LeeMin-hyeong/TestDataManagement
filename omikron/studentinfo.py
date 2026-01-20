@@ -1,5 +1,6 @@
 import os.path
 import openpyxl as xl
+import zipfile
 
 from openpyxl.utils.cell import get_column_letter as gcl
 from openpyxl.worksheet.worksheet import Worksheet
@@ -9,7 +10,7 @@ import omikron.chrome
 import omikron.config
 
 from omikron.defs import StudentInfo
-from omikron.exception import NoMatchingSheetException, FileOpenException
+from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
 from omikron.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, BORDER_ALL
 
 # 파일 기본 작업
@@ -36,7 +37,12 @@ def make_file() -> bool:
     return update_student(wb)
 
 def open(data_only:bool=False) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx", data_only=data_only)
+    try:
+        return xl.load_workbook(f"{omikron.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx", data_only=data_only)
+    except PermissionError:
+        raise ReopenFileException(f"{StudentInfo.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+    except zipfile.BadZipFile:
+        raise ReopenFileException(f"{StudentInfo.DEFAULT_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
 
 def open_worksheet(wb:xl.Workbook):
     try:
