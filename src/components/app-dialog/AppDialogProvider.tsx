@@ -9,6 +9,7 @@ type Kind = "warning" | "error" | "confirm";
 type BaseOpts = {
   title?: string;
   message?: string;
+  detail?: string;
   confirmText?: string;
   cancelText?: string;
   /** 바깥 클릭/ESC로 닫기 허용 (기본 false) */
@@ -41,6 +42,7 @@ export function AppDialogProvider({ children }: { children: React.ReactNode }) {
   const defaults: Required<BaseOpts> = {
     title: "",
     message: "",
+    detail: "",
     confirmText: "확인",
     cancelText: "취소",
     allowOutsideClose: false,
@@ -112,11 +114,23 @@ export function AppDialogProvider({ children }: { children: React.ReactNode }) {
             </DialogHeader>
 
             {/* ✅ 본문만 스크롤 (flex-1 + min-h-0 중요) */}
-            <div className="mt-1 flex-1 min-h-0 overflow-auto pr-1">
+            <div className="mt-1 flex-1 min-h-0 overflow-auto pr-1 space-y-3">
               {state.opts.message && (
                 <DialogDescription className="whitespace-pre-wrap">
                   {state.opts.message}
                 </DialogDescription>
+              )}
+              {state.opts.detail && (
+                <details className="rounded-md border bg-slate-50">
+                  <summary className="cursor-pointer select-none px-3 py-2 text-sm text-slate-700">
+                    여기를 클릭하여 자세한 에러 내용 확인
+                  </summary>
+                  <div className="border-t px-3 py-2">
+                    <pre className="max-h-48 overflow-auto whitespace-pre-wrap text-xs font-mono text-slate-700">
+                      {state.opts.detail}
+                    </pre>
+                  </div>
+                </details>
               )}
             </div>
 

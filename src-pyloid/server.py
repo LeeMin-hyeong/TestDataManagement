@@ -458,24 +458,24 @@ async def check_data_files(ctx: RPCContext) -> Dict[str, Any]:
 async def get_datafile_data(ctx: RPCContext, mocktest = False) -> Dict[Any, Any]:
     try:
         return {"ok": True, "data": omikron.datafile.get_data_sorted_dict(mocktest)}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_aisosic_data(ctx: RPCContext):
     try:
         return {"ok": True, "data": omikron.chrome.get_class_names()}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_aisosic_student_data(ctx: RPCContext):
     try:
         return {"ok": True, "data": omikron.chrome.get_class_student_dict()}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -499,40 +499,40 @@ async def check_aisosic_difference(ctx: RPCContext):
                 same = False
                 break
         return {"ok": True, "data": same}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_makeuptest_data(ctx: RPCContext):
     try:
         return {"ok": True, "data": omikron.makeuptest.get_studnet_test_index_dict()}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_class_list(ctx: RPCContext):
     try:
         return {"ok": True, "data": omikron.classinfo.get_class_names()}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_class_info(ctx: RPCContext, class_name:str):
     try:
         return {"ok": True, "data": omikron.classinfo.get_class_info(class_name)}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
 async def get_new_class_list(ctx: RPCContext):
     try:
         return {"ok": True, "data": omikron.classinfo.get_new_class_names()}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -540,8 +540,8 @@ async def is_cell_empty(ctx: RPCContext, row:int, col:int):
     try:
         empty, value = omikron.datafile.is_cell_empty(row, col)
         return {"ok": True, "empty": empty, "value": value}
-    except Exception:
-            return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+            return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 ####################################### 작업 API #######################################
@@ -555,7 +555,7 @@ async def change_data_dir(ctx:RPCContext):
         omikron.config.change_data_path(abspath)
         return {"ok": True}
     except Exception as e:
-        return {"ok": False, "error": traceback.format_exc()}
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -592,7 +592,7 @@ async def open_url(ctx: RPCContext, url: str) -> Dict[str, Any]:
             raise RuntimeError("브라우저를 열 수 없습니다.")
         return {"ok": True}
     except Exception as e:
-        return {"ok": False, "error": traceback.format_exc()}
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -756,8 +756,8 @@ async def make_class_info(ctx: RPCContext):
     try:
         omikron.classinfo.make_file()
         return {"ok": True, "path": str(Path(omikron.config.DATA_DIR) / '반 정보.xlsx')}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -773,8 +773,8 @@ async def make_data_file(ctx: RPCContext):
 
         omikron.datafile.make_file()
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -782,8 +782,8 @@ async def make_student_info(ctx: RPCContext):
     try:
         omikron.studentinfo.make_file()
         return {"ok": True, "path": str(Path(omikron.config.DATA_DIR) / '학생 정보.xlsx')}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -791,8 +791,8 @@ async def make_data_form(ctx: RPCContext):
     try:
         omikron.dataform.make_file()
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -800,8 +800,8 @@ async def reapply_conditional_format(ctx: RPCContext):
     try:
         warnings = omikron.datafile.conditional_formatting()
         return {"ok": True, "warnings": warnings}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -809,8 +809,8 @@ async def update_student_info(ctx: RPCContext):
     try:
         omikron.studentinfo.update_student()
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -824,8 +824,8 @@ async def add_student(ctx: RPCContext, target_student_name, target_class_name):
         omikron.studentinfo.add_student(target_student_name)
 
         return {"ok": True, "warnings": warnings}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -836,8 +836,8 @@ async def remove_student(ctx: RPCContext, target_student_name):
         omikron.studentinfo.delete_student(target_student_name)
 
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -849,8 +849,8 @@ async def move_student(ctx: RPCContext, target_student_name, target_class_name, 
         omikron.datafile.move_student(target_student_name, target_class_name, current_class_name)
 
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -861,8 +861,8 @@ async def change_class_info(ctx: RPCContext, target_class_name, target_teacher_n
         omikron.datafile.change_class_info(target_class_name, target_teacher_name)
 
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -870,8 +870,8 @@ async def make_temp_class_info(ctx: RPCContext, new_class_list):
     try:
         filepath = omikron.classinfo.make_temp_file_for_update(new_class_list)
         return {"ok": True, "path": filepath}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -880,8 +880,8 @@ async def update_class(ctx: RPCContext):
         omikron.datafile.update_class()
         omikron.classinfo.update_class()
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
     finally:
         try:
             omikron.classinfo.delete_temp()
@@ -894,8 +894,8 @@ async def delete_class_info_temp(ctx: RPCContext):
     try:
         omikron.classinfo.delete_temp()
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -928,8 +928,8 @@ async def save_individual_result(ctx: RPCContext, student_name:str, class_name:s
         omikron.chrome.send_individual_test_message(student_name, class_name, test_name, test_score, test_average, makeup_test_check, makeup_test_date, prog)
 
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -937,8 +937,8 @@ async def save_retest_result(ctx: RPCContext, target_row:int, makeup_test_score:
     try:
         omikron.makeuptest.save_makeup_test_result(target_row, makeup_test_score)
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -952,8 +952,8 @@ async def change_data_file_name_by_select(ctx: RPCContext):
 
         omikron.config.change_data_file_name_by_select(new_filename)
         return {"ok": True}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
 
 @server.method()
@@ -967,5 +967,5 @@ async def open_file_picker(ctx: RPCContext):
         file_b64 = base64.b64encode(path_obj.read_bytes()).decode()
 
         return {"ok": True, "path": str(path_obj), "name": path_obj.name, "b64": file_b64}
-    except Exception:
-        return {"ok": False, "error": traceback.format_exc()}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}

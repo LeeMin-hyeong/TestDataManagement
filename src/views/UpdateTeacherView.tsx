@@ -38,7 +38,7 @@ export default function UpdateTeacherView({ meta }: ViewProps) {
           setSelectedTeacher("");
         }
       } else {
-        await dialog.error({ title: "반 정보 파일 데이터 수집 실패", message: res?.error || "" });
+        await dialog.error({ title: "반 정보 파일 데이터 수집 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({
@@ -109,7 +109,7 @@ export default function UpdateTeacherView({ meta }: ViewProps) {
         await dialog.confirm({ title: "성공", message: "담당 선생님이 변경되었습니다." });
         setDone(true);
       } else {
-        await dialog.error({ title: "담당 선생님 변경 실패", message: res?.error || "" });
+        await dialog.error({ title: "담당 선생님 변경 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

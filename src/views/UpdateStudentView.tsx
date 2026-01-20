@@ -25,7 +25,7 @@ export default function UpdateStudentView({ meta }: ViewProps) {
         await dialog.confirm({ title: "성공", message: "학생 정보 파일 업데이트 완료\n학생 정보를 수정해주세요" });
         setDone(true);
       } else {
-        await dialog.error({ title: "학생 정보 업데이트 실패", message: res?.error || "" });
+        await dialog.error({ title: "학생 정보 업데이트 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

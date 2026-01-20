@@ -78,9 +78,9 @@ export default function SaveRetestView({ onAction, meta }: ViewProps) {
         setScore("")
         // }
       } else if (!datafileRes.ok) {
-        await dialog.error({ title: "데이터 파일 데이터 수집 실패", message: datafileRes?.error || "" })
+        await dialog.error({ title: "데이터 파일 데이터 수집 실패", message: datafileRes?.error || "", detail: datafileRes?.detail })
       } else if (!makeupRes.ok) {
-        await dialog.error({ title: "재시험 명단 파일 데이터 수집 실패", message: makeupRes?.error || "" })
+        await dialog.error({ title: "재시험 명단 파일 데이터 수집 실패", message: makeupRes?.error || "", detail: makeupRes?.detail })
       }
     } catch {
       setClassStudentMap({});
@@ -164,7 +164,7 @@ export default function SaveRetestView({ onAction, meta }: ViewProps) {
     if (!studentName) return;
 
     const tDict = makeupMap[studentName] || {};
-    const tList: TestInfo[] = Object.entries(tDict).map(([testName, row]) => ({
+    const tList: TestInfo[] = Object.entries(tDict).reverse().map(([testName, row]) => ({
       id: String(row), // (재시험 시트) 시험 행 인덱스
       name: testName,
     }));
@@ -209,7 +209,7 @@ export default function SaveRetestView({ onAction, meta }: ViewProps) {
         await dialog.confirm({ title: "완료", message: "점수가 저장되었습니다." });
         setScore("");
       } else {
-        await dialog.error({ title: "재시험 결과 저장 실패", message: res?.error || "" });
+        await dialog.error({ title: "재시험 결과 저장 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
       await dialog.error({ title: "오류", message: String(e?.message || e) });

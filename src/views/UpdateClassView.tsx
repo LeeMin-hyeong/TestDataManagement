@@ -296,9 +296,9 @@ export default function UpdateClassView({ meta }: ViewProps) {
         right.setItems([]); // 초기엔 비움
         left.clearSelection(); center.clearSelection(); right.clearSelection();
       } else if (!dfRes.ok) {
-        await dialog.error({ title: "데이터 파일 데이터 수집 실패", message: dfRes?.error || "" })
+        await dialog.error({ title: "데이터 파일 데이터 수집 실패", message: dfRes?.error || "", detail: dfRes?.detail })
       } else if (!aisosicRes.ok) {
-        await dialog.error({ title: "아이소식 데이터 수집 실패", message: aisosicRes?.error || "" })
+        await dialog.error({ title: "아이소식 데이터 수집 실패", message: aisosicRes?.error || "", detail: aisosicRes?.detail })
       }
     } catch (e) {
       left.setItems([]); center.setItems([]); right.setItems([]);
@@ -403,7 +403,7 @@ export default function UpdateClassView({ meta }: ViewProps) {
       } else {
         setStep2Loading(false);
         setStep2Open(false);
-        await dialog.error({ title: "임시 반 정보 데이터 수집 실패", message: res?.error || "" })
+        await dialog.error({ title: "임시 반 정보 데이터 수집 실패", message: res?.error || "", detail: res?.detail })
       }
     } catch (e) {
       setTempClasses([]);

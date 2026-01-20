@@ -67,7 +67,7 @@ export default function SendExamMessageView({ meta, onAction }: ViewProps) {
       const res = await rpc.call("open_file_picker", {})
       if (!res?.ok) {
         if (res?.error) {
-          await dialog.error({ title: "파일 선택 실패", message: res.error })
+          await dialog.error({ title: "파일 선택 실패", message: res.error, detail: res.detail })
         }
         return
       }
