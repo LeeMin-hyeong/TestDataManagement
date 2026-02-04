@@ -226,6 +226,7 @@ export default function SaveIndividualExamView({ onAction, meta }: ViewProps) {
       }); // {ok:true} 기대
       if (res?.ok) {
         await dialog.confirm({ title: "완료", message: "점수가 저장되었습니다.\n시험 결과 메시지를 확인하고 전송해주세요." });
+        setQuery("");
         loadData();
       } else {
         await dialog.error({ title: "개별 시험 결과 저장 실패", message: res?.error || "", detail: res?.detail });
