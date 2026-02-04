@@ -149,11 +149,11 @@ def data_validation(filepath:str) -> bool:
         if dailytest_checked and mocktest_checked: continue
         
         if not dailytest_checked and ws.cell(i, DataForm.DAILYTEST_SCORE_COLUMN).value is not None and dailytest_name is None:
-            errors.append(f"{class_name}의 시험명이 작성되지 않았습니다.")
+            errors.append(f"{class_name} 반의 시험명이 작성되지 않았습니다.")
             dailytest_checked = True
             form_checked      = False
         if not mocktest_checked and ws.cell(i, DataForm.MOCKTEST_SCORE_COLUMN).value is not None and mocktest_name is None:
-            errors.append(f"{class_name}의 모의고사명이 작성되지 않았습니다.")
+            errors.append(f"{class_name} 반의 모의고사명이 작성되지 않았습니다.")
             mocktest_checked = True
             form_checked     = False
 

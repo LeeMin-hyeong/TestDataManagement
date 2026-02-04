@@ -207,6 +207,7 @@ export default function SaveRetestView({ onAction, meta }: ViewProps) {
       });
       if (res?.ok) {
         await dialog.confirm({ title: "완료", message: "점수가 저장되었습니다." });
+        setQuery("");
         loadData()
       } else {
         await dialog.error({ title: "재시험 결과 저장 실패", message: res?.error || "", detail: res?.detail });
