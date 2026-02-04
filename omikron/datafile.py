@@ -130,7 +130,10 @@ def save_to_temp(wb:xl.Workbook):
     os.system(f"attrib +h {omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
 
 def delete_temp():
-    os.remove(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+    try:
+        os.remove(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+    except:
+        pass
 
 def isopen() -> bool:
     return os.path.isfile(f"{omikron.config.DATA_DIR}/data/~${omikron.config.DATA_FILE_NAME}.xlsx")
@@ -266,6 +269,21 @@ def get_class_names(ws:Worksheet):
             class_names.append(ws.cell(row, CLASS_NAME_COLUMN).value)
 
     return class_names
+
+def check_student_exist(studnet_name):
+    exist = False
+
+    wb = open(data_only=True, read_only=True)
+    ws = wb[DataFile.DEFAULT_SHEET_NAME]
+
+    _, _, STUDENT_NAME_COLUMN, _ = find_dynamic_columns(ws)
+
+    for row in range(ws.max_row+1):
+        if ws.cell(row, STUDENT_NAME_COLUMN).value == studnet_name:
+            exist = True
+            break
+
+    return exist
 
 # 파일 작업
 def save_test_data(filepath:str, prog: Progress):
@@ -878,7 +896,7 @@ def add_student(student_name:str, target_class_name:str, wb:xl.Workbook=None):
 
     return warnings
 
-def delete_student(student_name:str):
+def delete_student(class_name:str, student_name:str):
     """
     학생 퇴원 처리
     
@@ -889,10 +907,10 @@ def delete_student(student_name:str):
     wb = open()
     ws = wb[DataFile.DEFAULT_SHEET_NAME]
 
-    _, _, STUDENT_NAME_COLUMN, AVERAGE_SCORE_COLUMN = find_dynamic_columns(ws)
+    CLASS_NAME_COLUMN, _, STUDENT_NAME_COLUMN, AVERAGE_SCORE_COLUMN = find_dynamic_columns(ws)
 
     for row in range(2, ws.max_row+1):
-        if ws.cell(row, STUDENT_NAME_COLUMN).value == student_name:
+        if ws.cell(row, STUDENT_NAME_COLUMN).value == student_name and ws.cell(row, CLASS_NAME_COLUMN).value == class_name:
             for col in range(1, ws.max_column+1):
                 if ws.cell(row, col).font.bold:
                     ws.cell(row, col).font = FONT_BOLD_STRIKE

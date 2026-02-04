@@ -78,72 +78,132 @@ const buildStudentsByClass = (
   aisosicMap: AisosicClassStudentDict
 ) => {
   const dataClassNames = Object.keys(datafileMap);
-  const classNames = dataClassNames.filter((name) => aisosicMap[name]).sort();
+  const aisosicClassNames = Object.keys(aisosicMap);
+  const classNames = Array.from(new Set([...dataClassNames, ...aisosicClassNames])).sort();
 
-  const dataStudentClassMap = new Map<string, string>();
+  const dataClassesByStudent = new Map<string, Set<string>>();
   dataClassNames.forEach((className) => {
     Object.keys(datafileMap[className] || {}).forEach((studentName) => {
-      if (!dataStudentClassMap.has(studentName)) {
-        dataStudentClassMap.set(studentName, className);
-      }
+      const next = dataClassesByStudent.get(studentName) ?? new Set<string>();
+      next.add(className);
+      dataClassesByStudent.set(studentName, next);
     });
   });
 
-  const aisosicAllSet = new Set<string>();
-  const aisosicStudentClassCount = new Map<string, number>();
-  Object.values(aisosicMap).forEach((students) => {
-    students.forEach((name) => aisosicAllSet.add(name));
-  });
-  Object.values(aisosicMap).forEach((students) => {
-    students.forEach((name) => {
-      aisosicStudentClassCount.set(name, (aisosicStudentClassCount.get(name) ?? 0) + 1);
+  const aisosicClassesByStudent = new Map<string, Set<string>>();
+  aisosicClassNames.forEach((className) => {
+    (aisosicMap[className] || []).forEach((studentName) => {
+      const name = String(studentName);
+      if (!name) return;
+      const next = aisosicClassesByStudent.get(name) ?? new Set<string>();
+      next.add(className);
+      aisosicClassesByStudent.set(name, next);
     });
+  });
+
+  const allStudents = new Set<string>([
+    ...dataClassesByStudent.keys(),
+    ...aisosicClassesByStudent.keys(),
+  ]);
+
+  type StatusInfo = { status: StudentStatus; dataClassName?: string };
+  type DiffInfo = { aisosicStatusByClass: Map<string, StatusInfo>; dataOnlyClasses: Set<string> };
+  const diffByStudent = new Map<string, DiffInfo>();
+
+  const toSortedArray = (set: Set<string>) => Array.from(set).sort();
+
+  allStudents.forEach((studentName) => {
+    const dataSet = dataClassesByStudent.get(studentName) ?? new Set<string>();
+    const aisosicSet = aisosicClassesByStudent.get(studentName) ?? new Set<string>();
+
+    const overlap = new Set<string>();
+    dataSet.forEach((className) => {
+      if (aisosicSet.has(className)) overlap.add(className);
+    });
+
+    const dataOnly = new Set<string>();
+    dataSet.forEach((className) => {
+      if (!aisosicSet.has(className)) dataOnly.add(className);
+    });
+
+    const aisosicOnly = new Set<string>();
+    aisosicSet.forEach((className) => {
+      if (!dataSet.has(className)) aisosicOnly.add(className);
+    });
+
+    const aisosicStatusByClass = new Map<string, StatusInfo>();
+    const dataOnlyClasses = new Set<string>();
+
+    if (aisosicSet.size === 0) {
+      dataOnly.forEach((className) => dataOnlyClasses.add(className));
+    } else if (overlap.size > 0) {
+      overlap.forEach((className) => aisosicStatusByClass.set(className, { status: "ok" }));
+      aisosicOnly.forEach((className) => aisosicStatusByClass.set(className, { status: "missing" }));
+      dataOnly.forEach((className) => dataOnlyClasses.add(className));
+    } else if (dataSet.size === 0) {
+      aisosicOnly.forEach((className) => aisosicStatusByClass.set(className, { status: "missing" }));
+    } else {
+      const dataList = toSortedArray(dataOnly);
+      const aisosicList = toSortedArray(aisosicOnly);
+      const pairCount = Math.min(dataList.length, aisosicList.length);
+
+      for (let i = 0; i < pairCount; i += 1) {
+        aisosicStatusByClass.set(aisosicList[i], {
+          status: "other-class",
+          dataClassName: dataList[i],
+        });
+      }
+      for (let i = pairCount; i < aisosicList.length; i += 1) {
+        aisosicStatusByClass.set(aisosicList[i], { status: "missing" });
+      }
+      for (let i = pairCount; i < dataList.length; i += 1) {
+        dataOnlyClasses.add(dataList[i]);
+      }
+    }
+
+    diffByStudent.set(studentName, { aisosicStatusByClass, dataOnlyClasses });
   });
 
   const studentsByClass: Record<string, StudentItem[]> = {};
 
   classNames.forEach((className) => {
-    const dataStudents = Object.keys(datafileMap[className] || {});
-    const dataSet = new Set(dataStudents);
+    studentsByClass[className] = [];
+  });
+
+  classNames.forEach((className) => {
     const aisosicStudents = aisosicMap[className] || [];
-
-    const items: StudentItem[] = [];
-
     aisosicStudents.forEach((name, index) => {
-      let status: StudentStatus = "ok";
-      let dataClassName: string | undefined;
-      if (!dataSet.has(name)) {
-        const otherClass = dataStudentClassMap.get(name);
-        const duplicatedInAisosic = (aisosicStudentClassCount.get(name) ?? 0) > 1;
-        if (otherClass && !duplicatedInAisosic) {
-          status = "other-class";
-          dataClassName = otherClass;
-        } else {
-          status = "missing";
-        }
-      }
-      items.push({
-        id: `${className}::${name}::aisosic::${index}`,
-        name,
+      const studentName = String(name);
+      if (!studentName) return;
+      const diff = diffByStudent.get(studentName);
+      const statusInfo = diff?.aisosicStatusByClass.get(className);
+      const status = statusInfo?.status ?? "missing";
+      studentsByClass[className].push({
+        id: `${className}::${studentName}::aisosic::${index}`,
+        name: studentName,
         className,
         status,
-        dataClassName,
+        dataClassName: statusInfo?.dataClassName,
       });
     });
+  });
 
+  dataClassNames.forEach((className) => {
+    const dataStudents = Object.keys(datafileMap[className] || {});
     dataStudents.forEach((name, index) => {
-      if (!aisosicAllSet.has(name)) {
-        items.push({
-          id: `${className}::${name}::data::${index}`,
-          name,
-          className,
-          status: "data-only",
-        });
-      }
+      const diff = diffByStudent.get(name);
+      if (!diff?.dataOnlyClasses.has(className)) return;
+      studentsByClass[className].push({
+        id: `${className}::${name}::data::${index}`,
+        name,
+        className,
+        status: "data-only",
+      });
     });
+  });
 
-    items.sort((a, b) => a.name.localeCompare(b.name));
-    studentsByClass[className] = items;
+  classNames.forEach((className) => {
+    studentsByClass[className].sort((a, b) => a.name.localeCompare(b.name));
   });
 
   return { classNames, studentsByClass };
@@ -434,6 +494,7 @@ export default function ManageStudentView({ meta }: ViewProps) {
       setActionRunning("remove");
       // target_student_name
       const res = await rpc.call("remove_student", {
+        target_class_name: selectedStudent.className,
         target_student_name: selectedStudent.name,
       }); // { ok: true } 기대
       if (res?.ok) {
@@ -591,7 +652,7 @@ export default function ManageStudentView({ meta }: ViewProps) {
             </div>
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded bg-red-500" />
-              <span>데이터 파일에만 존재하지만 아이소식에 존재하지 않는 학생</span>
+              <span>데이터 파일에 존재하지만 아이소식에 존재하지 않는 학생</span>
             </div>
           </div>
 
