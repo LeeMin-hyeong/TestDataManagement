@@ -15,12 +15,12 @@ from tkinter import ttk
 
 # ===================== 사용자 설정 =====================
 GITHUB_OWNER = "LeeMin-hyeong"
-GITHUB_REPO  = "Omikron"
-ASSET_NAME_CONTAINS = "omikron-win.zip"   # 릴리스 ZIP 자산 이름 일부
+GITHUB_REPO  = "TestDataManagement"
+ASSET_NAME_CONTAINS = "tdm-win.zip"   # 릴리스 ZIP 자산 이름 일부
 SHA256_SUFFIX       = ".sha256"          # (선택) 체크섬 파일 suffix
 MAIN_EXE_NAME       = "main.exe"
 LOCAL_VERSION_FILE  = "version.txt"      # 루트 버전 파일
-ZIP_VERSION_FILE    = "version.txt"      # zip 내부 버전 파일 (omikron/version.txt)
+ZIP_VERSION_FILE    = "version.txt"      # zip 내부 버전 파일 (tdm/version.txt)
 LAUNCH_ARGS         = []                 # main.exe 실행 시 전달할 인자
 GITHUB_TOKEN        = None               # 필요시 GitHub PAT
 HTTP_TIMEOUT        = 30
@@ -58,7 +58,7 @@ def log(msg: str):
 
 # ===================== GitHub 통신 =====================
 def gh_get(url: str) -> bytes:
-    headers = {"User-Agent": "omikron-updater"}
+    headers = {"User-Agent": "tdm-updater"}
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
     req = Request(url, headers=headers)
@@ -84,7 +84,7 @@ def fetch_latest_zip_asset():
     return tag, asset, sha_asset
 
 def download_asset(asset, dst: Path) -> Path:
-    headers = {"User-Agent": "omikron-updater"}
+    headers = {"User-Agent": "tdm-updater"}
     if GITHUB_TOKEN:
         headers["Authorization"] = f"Bearer {GITHUB_TOKEN}"
     req = Request(asset["browser_download_url"], headers=headers)
@@ -146,15 +146,15 @@ def safe_extract_zip(zip_path: Path, dest_dir: Path):
         zf.extractall(dest_dir)
 
 def find_new_root(staging_root: Path) -> Path:
-    """staging_root/omikron 을 새 버전 루트로 사용."""
-    omikron_dir = staging_root / "omikron-win"
-    if omikron_dir.exists() and omikron_dir.is_dir():
-        return omikron_dir
-    raise RuntimeError("스테이징에서 omikron 폴더를 찾지 못했습니다.")
+    """staging_root/tdm 을 새 버전 루트로 사용."""
+    tdm_dir = staging_root / "tdm-win"
+    if tdm_dir.exists() and tdm_dir.is_dir():
+        return tdm_dir
+    raise RuntimeError("스테이징에서 tdm 폴더를 찾지 못했습니다.")
 
 def install_new_version(new_root: Path):
     """
-    new_root: STAGING_DIR/omikron
+    new_root: STAGING_DIR/tdm
     - main.exe   → ROOT/main.exe
     - _internal/ → ROOT/_internal
     - version.txt → ROOT/version.txt
@@ -286,7 +286,7 @@ class Updater:
 
         # === 로고 ===
         self.logo_img = None
-        logo_path = resource_path("src/assets/omikron.png")
+        logo_path = resource_path("src/assets/tdm.png")
         if logo_path.exists():
             try:
                 self.logo_img = tk.PhotoImage(file=str(logo_path))
@@ -303,7 +303,7 @@ class Updater:
             self.canvas.create_text(
                 self.width // 2,
                 80,
-                text="Omikron",
+                text="tdm",
                 fill="#000000",
                 font=("Segoe UI", 20, "bold")
             )
@@ -349,14 +349,14 @@ class Updater:
         except Exception:
             pass
         style.configure(
-            "Omikron.Horizontal.TProgressbar",
+            "tdm.Horizontal.TProgressbar",
             troughcolor="#383838",
             bordercolor="#383838",
             background="#ed1b24",
             lightcolor="#ed1b24",
             darkcolor="#ed1b24",
         )
-        self.progress.configure(style="Omikron.Horizontal.TProgressbar")
+        self.progress.configure(style="tdm.Horizontal.TProgressbar")
 
         # 카드 안, 아래쪽에 frame 올리기
         self.canvas.create_window(
@@ -438,7 +438,7 @@ class Updater:
     def run_update_flow(self):
         if is_main_running():
             log("메인 프로그램이 이미 실행 중입니다. 업데이트를 건너뜁니다.")
-            self.set_status("이미 Omikron이 실행 중입니다.", 100)
+            self.set_status("이미 tdm이 실행 중입니다.", 100)
             time.sleep(1.5)
 
             def _close():

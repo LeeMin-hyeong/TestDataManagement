@@ -1,4 +1,4 @@
-export type OmikronActionKey =
+export type tdmActionKey =
   | "welcome"
   | "update-class"
   | "rename-data-file"
@@ -20,5 +20,5 @@ export interface ActionMeta {
 
 export interface ViewProps {
   meta: ActionMeta;
-  onAction?: (key: OmikronActionKey) => void;
+  onAction?: (key: tdmActionKey) => void;
 }

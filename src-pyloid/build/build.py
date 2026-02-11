@@ -6,17 +6,17 @@ from pyloid.utils import get_platform
 main_script = './src-pyloid/main.py'
 name = 'main'
 updater_script = './src-pyloid/updater.py'
-entry_name = 'Omikron'
+entry_name = 'TDM'
 dist_path = './dist'
 work_path = './build'
 
 
 if get_platform() == 'windows':
-	icon = './src-pyloid/icons/omikron_icon.ico'
+	icon = './src-pyloid/icons/tdm_icon.ico'
 elif get_platform() == 'macos':
-	icon = './src-pyloid/icons/omikron_icon.png'
+	icon = './src-pyloid/icons/tdm_icon.png'
 else:
-	icon = './src-pyloid/icons/omikron_icon.png'
+	icon = './src-pyloid/icons/tdm_icon.png'
 
 if get_platform() == 'windows':
     optimize_spec = './src-pyloid/build/windows_optimize.spec'
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 			'--onefile',
 			'--windowed',
 			'--add-data=./src-pyloid/icons/:./src-pyloid/icons/',
-			'--add-data=./src/assets/omikron.png:./src/assets',
+			'--add-data=./src/assets/tdm.png:./src/assets',
 			f'--icon={icon}',
 		]
 	)

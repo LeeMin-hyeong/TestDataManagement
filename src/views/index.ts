@@ -1,4 +1,4 @@
-import type { OmikronActionKey, ViewProps } from "@/types/omikron";
+import type { tdmActionKey, ViewProps } from "@/types/tdm";
 import type { FC } from "react";
 import RenameDataFileView from "./RenameDataFileView";
 import SaveExamView from "./SaveExamView";
@@ -13,7 +13,7 @@ import UpdateTeacherView from "./UpdateTeacherView";
 import WelcomeView from "./WelcomeView";
 import ManageStudentView from "./ManageStudentView";
 
-const viewMap: Partial<Record<OmikronActionKey, FC<ViewProps>>> = {
+const viewMap: Partial<Record<tdmActionKey, FC<ViewProps>>> = {
   "welcome": WelcomeView,
   "rename-data-file": RenameDataFileView,
   "save-exam": SaveExamView,
@@ -28,6 +28,6 @@ const viewMap: Partial<Record<OmikronActionKey, FC<ViewProps>>> = {
   "manage-student": ManageStudentView
 };
 
-export function getActionView(action: OmikronActionKey): FC<ViewProps> {
+export function getActionView(action: tdmActionKey): FC<ViewProps> {
   return viewMap[action]!;
 }

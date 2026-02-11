@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ViewProps } from "@/types/omikron";
+import type { ViewProps } from "@/types/tdm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

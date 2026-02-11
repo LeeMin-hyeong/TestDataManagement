@@ -6,13 +6,13 @@ from win32process import CREATE_NO_WINDOW # only works in Windows
 import requests
 from bs4 import BeautifulSoup
 
-import omikron.dataform
-import omikron.studentinfo
+import tdm.dataform
+import tdm.studentinfo
 
-from omikron.config import URL, TEST_RESULT_MESSAGE, MAKEUP_TEST_NO_SCHEDULE_MESSAGE, MAKEUP_TEST_SCHEDULE_MESSAGE
-from omikron.defs import Chrome, DataForm
-from omikron.util import calculate_makeup_test_schedule, date_to_kor_date
-from omikron.progress import Progress
+from tdm.config import URL, TEST_RESULT_MESSAGE, MAKEUP_TEST_NO_SCHEDULE_MESSAGE, MAKEUP_TEST_SCHEDULE_MESSAGE
+from tdm.defs import Chrome, DataForm
+from tdm.util import calculate_makeup_test_schedule, date_to_kor_date
+from tdm.progress import Progress
 
 def _fetch_aisosik_soup() -> BeautifulSoup:
     """
@@ -190,11 +190,11 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         options.page_load_strategy = "eager"
         options.add_experimental_option("detach", True)
 
-        form_wb = omikron.dataform.open(filepath)
-        form_ws = omikron.dataform.open_worksheet(form_wb)
+        form_wb = tdm.dataform.open(filepath)
+        form_ws = tdm.dataform.open_worksheet(form_wb)
 
-        student_wb = omikron.studentinfo.open()
-        student_ws = omikron.studentinfo.open_worksheet(student_wb)
+        student_wb = tdm.studentinfo.open()
+        student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
         driver = webdriver.Chrome(service=service, options=options)
         
@@ -297,7 +297,7 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
             if form_ws.cell(row, DataForm.MAKEUP_TEST_CHECK_COLUMN).value in ("x", "X"):
                 continue
 
-            info_exists, makeup_test_weekday, makeup_test_time, _ = omikron.studentinfo.get_student_info(student_ws, student_name)
+            info_exists, makeup_test_weekday, makeup_test_time, _ = tdm.studentinfo.get_student_info(student_ws, student_name)
             if info_exists and makeup_test_weekday:
                 complete, calculated_schedule, time_index = calculate_makeup_test_schedule(makeup_test_weekday, makeup_test_date)
                 if complete:
@@ -403,8 +403,8 @@ def send_individual_test_message(student_name:str, class_name:int, test_name:int
 
     if " (모의고사)" in class_name: class_name = class_name[:-7]
 
-    student_wb = omikron.studentinfo.open()
-    student_ws = omikron.studentinfo.open_worksheet(student_wb)
+    student_wb = tdm.studentinfo.open()
+    student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
     options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
@@ -448,7 +448,7 @@ def send_individual_test_message(student_name:str, class_name:int, test_name:int
     driver.execute_script("document.title = '재시험 안내'")
 
     # 학생 정보 검색
-    info_exists, makeup_test_weekday, makeup_test_time, _ = omikron.studentinfo.get_student_info(student_ws, student_name)
+    info_exists, makeup_test_weekday, makeup_test_time, _ = tdm.studentinfo.get_student_info(student_ws, student_name)
     if not info_exists:
         prog.warning(f"{student_name}의 학생 정보가 존재하지 않습니다.")
 

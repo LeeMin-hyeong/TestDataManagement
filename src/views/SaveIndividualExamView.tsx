@@ -1,6 +1,6 @@
 // src/views/SaveIndividualExamView.tsx
 import { useEffect, useMemo, useState } from "react";
-import type { ViewProps } from "@/types/omikron";
+import type { ViewProps } from "@/types/tdm";
 import { rpc } from "pyloid-js";
 import { useAppDialog } from "@/components/app-dialog/AppDialogProvider";
 

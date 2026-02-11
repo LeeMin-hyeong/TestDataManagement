@@ -1,19 +1,31 @@
 import { Card, CardContent } from "@/components/ui/card";
-// 경로는 실제 위치에 맞게 조정
-import omikron from "@/assets/omikron.png";
+import { rpc } from "pyloid-js";
+import tdm from "@/assets/tdm.png";
 
 export default function WelcomeView() {
   return (
     <Card className="h-full rounded-2xl border-border/80 shadow-sm">
-      <CardContent className="flex flex-col h-full flex items-center justify-center">
-        <img
-          src={omikron}
-          alt="Omikron"
-          width={400}
-          className="h-auto max-w-full py-3"
-        />
-        <p>오미크론 데이터 관리 프로그램</p>
-        <p>왼쪽의 메뉴를 클릭하여 시작하세요</p>
+      <CardContent className="relative flex h-full flex-col text-center">
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <img
+            src={tdm}
+            alt="tdm"
+            width={96}
+            className="h-auto max-w-full py-3"
+          />
+          <p>테스트 데이터 관리 프로그램</p>
+          <p>왼쪽의 메뉴를 클릭하여 시작하세요</p>
+        </div>
+        <div className="absolute bottom-2 left-0 right-0 text-xs text-muted-foreground">
+          Icons by{" "}
+          <button
+            type="button"
+            onClick={() => rpc.call("open_url", { url: "https://icons8.com" })}
+            className="cursor-pointer underline underline-offset-2"
+          >
+            Icons8
+          </button>
+        </div>
       </CardContent>
     </Card>
   );
