@@ -1,0 +1,94 @@
+# .github/workflows/issue_license.yml
+name: Issue License (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Customer name"
+        required: true
+        type: string
+      license_id:
+        description: "License ID (e.g. TDM-2026-0001)"
+        required: true
+        type: string
+      expires_at:
+        description: "Expires at (ISO8601, optional)"
+        required: false
+        type: string
+      issued_at:
+        description: "Issued at (ISO8601, optional)"
+        required: false
+        type: string
+      product:
+        description: "Product name"
+        required: false
+        default: "TestDataManagement"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  issue:
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cryptography
+
+      - name: Write private key (from secret)
+        shell: pwsh
+        run: |
+          $keyPath = "license-keys/tdm_private_key.pem"
+          New-Item -ItemType Directory -Force -Path "license-keys" | Out-Null
+          $content = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.TDM_PRIVATE_KEY }}"))
+          Set-Content -Path $keyPath -Value $content -NoNewline -Encoding utf8
+      - name: Write public key (from secret)
+        shell: pwsh
+        run: |
+          $keyPath = "license-keys/tdm_public_key.pem"
+          New-Item -ItemType Directory -Force -Path "license-keys" | Out-Null
+          $content = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.TDM_PUBLIC_KEY }}"))
+          Set-Content -Path $keyPath -Value $content -NoNewline -Encoding utf8
+
+      - name: Issue license.json
+        shell: pwsh
+        run: |
+          $args = @(
+            "scripts/license_tools.py", "issue",
+            "--private-key", "license-keys/tdm_private_key.pem",
+            "--public-key", "license-keys/tdm_public_key.pem",
+            "--name", "${{ inputs.name }}",
+            "--license-id", "${{ inputs.license_id }}",
+            "--product", "${{ inputs.product }}",
+            "--out", "license.json"
+          )
+          if ("${{ inputs.expires_at }}") { $args += @("--expires-at", "${{ inputs.expires_at }}") }
+          if ("${{ inputs.issued_at }}") { $args += @("--issued-at", "${{ inputs.issued_at }}") }
+          python @args
+
+      - name: Cleanup private key
+        shell: pwsh
+        run: |
+          Remove-Item -Force -ErrorAction SilentlyContinue "license-keys/tdm_private_key.pem"
+          Remove-Item -Force -ErrorAction SilentlyContinue "license-keys/tdm_public_key.pem"
+
+      - name: Upload license.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-json
+          path: license.json
+          if-no-files-found: error
