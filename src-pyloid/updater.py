@@ -317,7 +317,7 @@ class Updater:
         )
 
         # 상태 텍스트
-        self.status_var = tk.StringVar(value="오미크론 프로그램 업데이트 체커")
+        self.status_var = tk.StringVar(value="테스트 데이터 관리 프로그램 업데이트 체커")
         self.status_label = tk.Label(
             self.bottom_frame,
             textvariable=self.status_var,
