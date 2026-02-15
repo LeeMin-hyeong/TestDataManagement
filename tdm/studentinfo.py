@@ -6,12 +6,12 @@ from openpyxl.utils.cell import get_column_letter as gcl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.worksheet.datavalidation import DataValidation
 
-import omikron.chrome
-import omikron.config
+import tdm.chrome
+import tdm.config
 
-from omikron.defs import StudentInfo
-from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
-from omikron.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, BORDER_ALL
+from tdm.defs import StudentInfo
+from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
+from tdm.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, BORDER_ALL
 
 # 파일 기본 작업
 def make_file() -> bool:
@@ -38,7 +38,7 @@ def make_file() -> bool:
 
 def open(data_only:bool=False) -> xl.Workbook:
     try:
-        return xl.load_workbook(f"{omikron.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx", data_only=data_only)
+        return xl.load_workbook(f"{tdm.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx", data_only=data_only)
     except PermissionError:
         raise ReopenFileException(f"{StudentInfo.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
     except zipfile.BadZipFile:
@@ -52,12 +52,12 @@ def open_worksheet(wb:xl.Workbook):
 
 def save(wb:xl.Workbook):
     try:
-        wb.save(f"{omikron.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx")
+        wb.save(f"{tdm.config.DATA_DIR}/{StudentInfo.DEFAULT_NAME}.xlsx")
     except:
         raise FileOpenException()
 
 def isopen() -> bool:
-    return os.path.isfile(f"{omikron.config.DATA_DIR}/~${StudentInfo.DEFAULT_NAME}.xlsx")
+    return os.path.isfile(f"{tdm.config.DATA_DIR}/~${StudentInfo.DEFAULT_NAME}.xlsx")
 
 # 파일 유틸리티
 def get_student_info(ws:Worksheet, student_name:str):
@@ -111,7 +111,7 @@ def delete_student(target_student_name:str):
     save(wb)
 
 def update_student(wb:xl.Workbook=None):
-    latest_student_names = omikron.chrome.get_student_names()
+    latest_student_names = tdm.chrome.get_student_names()
 
     if wb is None:
         wb = open()

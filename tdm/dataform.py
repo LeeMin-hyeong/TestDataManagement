@@ -6,13 +6,13 @@ from openpyxl.styles import Protection
 from openpyxl.utils.cell import get_column_letter as gcl
 from openpyxl.worksheet.datavalidation import DataValidation
 
-import omikron.chrome
-import omikron.classinfo
-import omikron.config
+import tdm.chrome
+import tdm.classinfo
+import tdm.config
 
-from omikron.defs import DataForm
-from omikron.exception import NoMatchingSheetException
-from omikron.style import BORDER_ALL, ALIGN_CENTER, ALIGN_CENTER_WRAP
+from tdm.defs import DataForm
+from tdm.exception import NoMatchingSheetException
+from tdm.style import BORDER_ALL, ALIGN_CENTER, ALIGN_CENTER_WRAP
 
 class DataValidationException(Exception):
     pass
@@ -44,14 +44,14 @@ def make_file() -> bool:
         ws.cell(1, col).alignment = ALIGN_CENTER_WRAP
         ws.cell(1, col).border    = BORDER_ALL
 
-    class_wb = omikron.classinfo.open(True)
-    class_ws = omikron.classinfo.open_worksheet(class_wb)
+    class_wb = tdm.classinfo.open(True)
+    class_ws = tdm.classinfo.open_worksheet(class_wb)
 
-    for class_name, student_names in omikron.chrome.get_class_student_dict().items():
+    for class_name, student_names in tdm.chrome.get_class_student_dict().items():
         if len(student_names) == 0:
             continue
 
-        exist, teacher_name, class_weekday, test_time, _ = omikron.classinfo.get_class_info(class_name, ws=class_ws)
+        exist, teacher_name, class_weekday, test_time, _ = tdm.classinfo.get_class_info(class_name, ws=class_ws)
         if not exist: continue
 
         WRITE_LOCATION = start = ws.max_row + 1
@@ -105,15 +105,15 @@ def make_file() -> bool:
         ws.cell(row, DataForm.MOCKTEST_SCORE_COLUMN).protection    = Protection(locked=False)
         ws.cell(row, DataForm.MAKEUP_TEST_CHECK_COLUMN).protection = Protection(locked=False)
 
-    if os.path.isfile(f"{omikron.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}).xlsx"):
+    if os.path.isfile(f"{tdm.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}).xlsx"):
         i = 1
         while True:
-            if not os.path.isfile(f"{omikron.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}) ({i}).xlsx"):
-                wb.save(f"{omikron.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}) ({i}).xlsx")
+            if not os.path.isfile(f"{tdm.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}) ({i}).xlsx"):
+                wb.save(f"{tdm.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}) ({i}).xlsx")
                 break
             i += 1
     else:
-        wb.save(f"{omikron.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}).xlsx")
+        wb.save(f"{tdm.config.DATA_DIR}/데일리테스트 기록 양식({datetime.today().strftime('%m.%d')}).xlsx")
 
     return True
 

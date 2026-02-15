@@ -5,16 +5,16 @@ import zipfile
 from datetime import datetime
 from openpyxl.utils.cell import get_column_letter as gcl
 
-import omikron.classinfo
-import omikron.dataform
-import omikron.studentinfo
-import omikron.config
+import tdm.classinfo
+import tdm.dataform
+import tdm.studentinfo
+import tdm.config
 
-from omikron.defs import MakeupTestList, DataForm
-from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
-from omikron.util import calculate_makeup_test_schedule
-from omikron.progress import Progress
-from omikron.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, FILL_NEW_STUDENT, BORDER_ALL
+from tdm.defs import MakeupTestList, DataForm
+from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
+from tdm.util import calculate_makeup_test_schedule
+from tdm.progress import Progress
+from tdm.style import ALIGN_CENTER, ALIGN_CENTER_WRAP, FILL_NEW_STUDENT, BORDER_ALL
 
 
 # 파일 기본 작업
@@ -39,11 +39,11 @@ def make_file():
         ws.cell(1, col).alignment = ALIGN_CENTER_WRAP
         ws.cell(1, col).border    = BORDER_ALL
 
-    wb.save(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx")
+    wb.save(f"{tdm.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx")
 
 def open(data_only:bool=False) -> xl.Workbook:
     try:
-        return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx", data_only=data_only)
+        return xl.load_workbook(f"{tdm.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx", data_only=data_only)
     except PermissionError:
         raise ReopenFileException(f"{MakeupTestList.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
     except zipfile.BadZipFile:
@@ -59,12 +59,12 @@ def open_worksheet(wb:xl.Workbook):
 
 def save(wb:xl.Workbook):
     try:
-        wb.save(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx")
+        wb.save(f"{tdm.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx")
     except:
         raise FileOpenException(f"{MakeupTestList.DEFAULT_NAME} 파일을 닫은 뒤 다시 시도해주세요")
 
 def isopen():
-    return os.path.isfile(f"{omikron.config.DATA_DIR}/data/~${MakeupTestList.DEFAULT_NAME}.xlsx")
+    return os.path.isfile(f"{tdm.config.DATA_DIR}/data/~${MakeupTestList.DEFAULT_NAME}.xlsx")
 
 # 파일 유틸리티
 def get_studnet_test_index_dict():
@@ -101,19 +101,19 @@ def save_makeup_test_list(filepath: str, makeup_test_date: dict, prog: Progress)
     wb = None
 
     try:
-        form_wb = omikron.dataform.open(filepath)
-        form_ws = omikron.dataform.open_worksheet(form_wb)
+        form_wb = tdm.dataform.open(filepath)
+        form_ws = tdm.dataform.open_worksheet(form_wb)
 
         # 재시험 정보 파일 없으면 생성
-        if not os.path.isfile(f"{omikron.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx"):
+        if not os.path.isfile(f"{tdm.config.DATA_DIR}/data/{MakeupTestList.DEFAULT_NAME}.xlsx"):
             make_file()
 
         wb = open()
         ws = open_worksheet(wb)
 
         # 학생 정보
-        student_wb = omikron.studentinfo.open(True)
-        student_ws = omikron.studentinfo.open_worksheet(student_wb)
+        student_wb = tdm.studentinfo.open(True)
+        student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
         # ✅ 오늘 날짜 캐시 (루프 밖)
         today = datetime.today().date()
@@ -193,7 +193,7 @@ def save_makeup_test_list(filepath: str, makeup_test_date: dict, prog: Progress)
                     continue
 
                 # 학생 재시험 정보 검색
-                complete, makeup_test_weekday, _, new_student = omikron.studentinfo.get_student_info(student_ws, student_name)
+                complete, makeup_test_weekday, _, new_student = tdm.studentinfo.get_student_info(student_ws, student_name)
                 if not complete:
                     prog.warning(f"{student_name}의 학생 정보가 존재하지 않습니다.")
 
@@ -254,22 +254,22 @@ def save_individual_makeup_test(student_name:str, class_name:str, test_name:str,
     wb = open()
     ws = open_worksheet(wb)
 
-    student_wb = omikron.studentinfo.open(True)
-    student_ws = omikron.studentinfo.open_worksheet(student_wb)
+    student_wb = tdm.studentinfo.open(True)
+    student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
-    class_wb = omikron.classinfo.open(True)
-    class_ws = omikron.classinfo.open_worksheet(class_wb)
+    class_wb = tdm.classinfo.open(True)
+    class_ws = tdm.classinfo.open_worksheet(class_wb)
 
     for row in range(ws.max_row+1, 1, -1):
         if ws.cell(row-1, MakeupTestList.TEST_DATE_COLUMN).value is not None:
             MAKEUP_TEST_WRITE_ROW = row
             break
 
-    exist, teacher_name, _, _, _ = omikron.classinfo.get_class_info(class_name, class_ws)
+    exist, teacher_name, _, _, _ = tdm.classinfo.get_class_info(class_name, class_ws)
     if not exist:
         prog.warning(f"{class_name}의 반 정보가 존재하지 않습니다.")
 
-    exist, makeup_test_weekday, _, new_student = omikron.studentinfo.get_student_info(student_ws, student_name)
+    exist, makeup_test_weekday, _, new_student = tdm.studentinfo.get_student_info(student_ws, student_name)
     if not exist:
         prog.warning(f"{student_name}의 학생 정보가 존재하지 않습니다.")
 

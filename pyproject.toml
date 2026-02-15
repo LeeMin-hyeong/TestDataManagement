@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "omikron"
+name = "tdm"
 version = "0.1.0"
 description = "Internal lib"
 requires-python = ">=3.10"
@@ -16,6 +16,7 @@ dependencies = [
     "python-dateutil",
     "beautifulsoup4",
     "requests",
+    "cryptography>=42.0.0",
 ]
 
 [dependency-groups]
@@ -26,4 +27,4 @@ dev = [
 ]
 
 [tool.setuptools]
-packages = ["omikron"]
+packages = ["tdm"]

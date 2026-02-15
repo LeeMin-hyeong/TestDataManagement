@@ -21,7 +21,7 @@ import {
 
 import { getActionView } from "@/views";
 import { descriptions } from "@/meta/descriptions";
-import type { OmikronActionKey } from "@/types/omikron";
+import type { tdmActionKey } from "@/types/tdm";
 import FullHeader from "@/components/FullHeader";
 import { rpc } from "pyloid-js";
 import PrereqSetupView from "@/views/PrereqSetupView";
@@ -29,7 +29,7 @@ import useHolidayDialog from "@/components/holiday-dialog/useHolidayDialog";
 import { useAppDialog } from "@/components/app-dialog/AppDialogProvider";
 
 interface Props {
-  onAction?: (key: OmikronActionKey) => void
+  onAction?: (key: tdmActionKey) => void
   width?: number
   height?: number
   sidebarPercent?: number
@@ -65,7 +65,7 @@ function NavButton({
 const groups: {
   title: string
   icon: React.ComponentType<{ className?: string }>
-  items: { key: OmikronActionKey; label: string; icon: React.ComponentType<{ className?: string }> }[]
+  items: { key: tdmActionKey; label: string; icon: React.ComponentType<{ className?: string }> }[]
 }[] = [
   {
     title: "기수 변경 관련",
@@ -105,15 +105,15 @@ const groups: {
 ]
 
 // === Main ===
-export default function OmikronPanel({ onAction, width = 1400, height = 830, sidebarPercent = 10 }: Props) {
+export default function TdmPanel({ onAction, width = 1400, height = 830, sidebarPercent = 10 }: Props) {
   const dialog = useAppDialog();
-  const [selected, setSelected] = useState<OmikronActionKey>("welcome")
-  const [mountedKeys, setMountedKeys] = useState<OmikronActionKey[]>(["welcome"]);
+  const [selected, setSelected] = useState<tdmActionKey>("welcome")
+  const [mountedKeys, setMountedKeys] = useState<tdmActionKey[]>(["welcome"]);
   // const View = useMemo(() => getActionView(selected), [selected])
   const [missing, setMissing] = useState(false);
   const [holidayChecked, setHolidayChecked] = useState(false);
   const { openHolidayDialog, lastHolidaySelection } = useHolidayDialog()
-  const HELP_URL = "https://omikron-db.notion.site/ad673cca64c146d28adb3deaf8c83a0d?pvs=4"
+  const HELP_URL = "https://tdm-db.notion.site/ad673cca64c146d28adb3deaf8c83a0d?pvs=4"
 
   // ✅ 프리체크 상태 + 지속 폴링
   const [state, setState] = useState<any>(null);
@@ -194,7 +194,7 @@ export default function OmikronPanel({ onAction, width = 1400, height = 830, sid
         <div className="flex h-16 items-center justify-between border-b border-border/80 px-6">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-lg font-semibold tracking-tight text-foreground py-5">Omikron 데이터 프로그램</h1>
+              <h1 className="text-lg font-semibold tracking-tight text-foreground py-5">테스트 데이터 관리 프로그램</h1>
             </div>
           </div>
           <div className="flex gap-2">
@@ -208,8 +208,8 @@ export default function OmikronPanel({ onAction, width = 1400, height = 830, sid
               </Button>
             </div>
           )}
-            <Button variant="outline" className="rounded-xl w-40 justify-between" onClick={() => openHolidayDialog()}>
-              {holidayChecked ? <><CalendarCheck className="h-4 w-4"/>학원 휴일 설정됨</> : <><CalendarDays className="mr-4 h-4 w-4" /> 학원 휴일 설정</> } 
+            <Button variant="outline" className="rounded-xl w-30 justify-between" onClick={() => openHolidayDialog()}>
+              {holidayChecked ? <><CalendarCheck className="h-4 w-4"/>휴일 설정됨</> : <><CalendarDays className="mr-4 h-4 w-4" />휴일 설정</> } 
             </Button>
             <Button variant="outline" className="rounded-xl" onClick={handleOpenHelp}>
               <HelpCircle className="h-4 w-4" /> 사용법 및 도움말

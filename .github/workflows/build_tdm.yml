@@ -71,13 +71,13 @@ jobs:
           npm run build
 
       # === 여기서 dist를 zip으로 묶어서 단일 파일만 업로드 ===
-      - name: Pack as omikron-win.zip (+ sha256)
+      - name: Pack as tdm-win.zip (+ sha256)
         shell: pwsh
         run: |
           chcp 65001 > $null
-          $zipRoot = "omikron-win"
+          $zipRoot = "tdm-win"
           $version = "${{ inputs.version }}"
-          Remove-Item -Force -ErrorAction SilentlyContinue omikron-win.zip
+          Remove-Item -Force -ErrorAction SilentlyContinue tdm-win.zip
           Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $zipRoot
 
           if (-not $version) {
@@ -88,20 +88,20 @@ jobs:
           New-Item -ItemType Directory -Path $zipRoot | Out-Null
           Copy-Item -Recurse -Force "dist/main/_internal" -Destination "$zipRoot/_internal"
           Copy-Item -Force "dist/main/main.exe" -Destination "$zipRoot/main.exe"
-          Copy-Item -Force "dist/omikron.exe" -Destination "$zipRoot/omikron.exe"
+          Copy-Item -Force "dist/tdm.exe" -Destination "$zipRoot/tdm.exe"
           Copy-Item -Force "dist/main/version.txt" -Destination "$zipRoot/version.txt"
 
-          Compress-Archive -Path $zipRoot -DestinationPath "omikron-win.zip" -Force
+          Compress-Archive -Path $zipRoot -DestinationPath "tdm-win.zip" -Force
           # (선택) SHA256 생성
-          certutil -hashfile omikron-win.zip SHA256 | Select-Object -Skip 1 | Select-Object -First 1 | % { $_.Trim() } | Out-File -Encoding ascii omikron-win.zip.sha256
+          certutil -hashfile tdm-win.zip SHA256 | Select-Object -Skip 1 | Select-Object -First 1 | % { $_.Trim() } | Out-File -Encoding ascii tdm-win.zip.sha256
 
       - name: Upload artifact (zip only)
         uses: actions/upload-artifact@v4
         with:
-          name: omikron-win
+          name: tdm-win
           path: |
-            omikron-win.zip
-            omikron-win.zip.sha256
+            tdm-win.zip
+            tdm-win.zip.sha256
           if-no-files-found: error
 
   release:
@@ -112,8 +112,8 @@ jobs:
       - name: Download artifact (zip)
         uses: actions/download-artifact@v4
         with:
-          name: omikron-win
-          path: artifacts/omikron-win
+          name: tdm-win
+          path: artifacts/tdm-win
 
       - name: Create GitHub Release (zip only)
         uses: softprops/action-gh-release@v2
@@ -121,5 +121,5 @@ jobs:
           tag_name: ${{ inputs.version }}
           name: ${{ inputs.version }}
           files: |
-            artifacts/omikron-win/omikron-win.zip
-            artifacts/omikron-win/omikron-win.zip.sha256
+            artifacts/tdm-win/tdm-win.zip
+            artifacts/tdm-win/tdm-win.zip.sha256

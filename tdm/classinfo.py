@@ -7,13 +7,13 @@ from openpyxl.utils.cell import get_column_letter as gcl
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.worksheet.datavalidation import DataValidation
 
-import omikron.chrome
-import omikron.config
+import tdm.chrome
+import tdm.config
 
-from omikron.defs import ClassInfo
-from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
-from omikron.progress import Progress
-from omikron.style import BORDER_ALL, ALIGN_CENTER, ALIGN_CENTER_WRAP
+from tdm.defs import ClassInfo
+from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
+from tdm.progress import Progress
+from tdm.style import BORDER_ALL, ALIGN_CENTER, ALIGN_CENTER_WRAP
 
 # 파일 기본 작업
 def make_file():
@@ -32,7 +32,7 @@ def make_file():
     ws.column_dimensions.group("Z", hidden=True)
 
     # 반 루프
-    for class_name in omikron.chrome.get_class_names():
+    for class_name in tdm.chrome.get_class_names():
         WRITE_LOCATION = ws.max_row + 1
         ws.cell(WRITE_LOCATION, 1).value = class_name
 
@@ -53,14 +53,14 @@ def make_file():
 
 def open(data_only:bool=True, read_only:bool=True) -> xl.Workbook:
     try:
-        return xl.load_workbook(f"{omikron.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx", data_only=data_only, read_only=read_only)
+        return xl.load_workbook(f"{tdm.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx", data_only=data_only, read_only=read_only)
     except PermissionError:
         raise ReopenFileException(f"{ClassInfo.DEFAULT_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
     except zipfile.BadZipFile:
         raise ReopenFileException(f"{ClassInfo.DEFAULT_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
 
 def open_temp(data_only:bool=True, read_only:bool=True) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    return xl.load_workbook(f"{tdm.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
 
 def open_worksheet(wb:xl.Workbook):
     try:
@@ -70,26 +70,26 @@ def open_worksheet(wb:xl.Workbook):
 
 def save(wb:xl.Workbook):
     try:
-        wb.save(f"{omikron.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx")
+        wb.save(f"{tdm.config.DATA_DIR}/{ClassInfo.DEFAULT_NAME}.xlsx")
     except:
         raise FileOpenException(f"{ClassInfo.DEFAULT_NAME} 파일을 닫은 뒤 다시 시도해주세요")
 
 def save_to_temp(wb:xl.Workbook):
-    wb.save(f"{omikron.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx")
+    wb.save(f"{tdm.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx")
 
 def delete_temp():
     try:
-        os.remove(f"{omikron.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx")
+        os.remove(f"{tdm.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx")
     except:
         raise FileOpenException(f"{ClassInfo.DEFAULT_NAME} 파일이 열려 있어 삭제에 실패했습니다.")
 
 def isopen() -> bool:
-    return os.path.isfile(f"{omikron.config.DATA_DIR}/~${ClassInfo.DEFAULT_NAME}.xlsx")
+    return os.path.isfile(f"{tdm.config.DATA_DIR}/~${ClassInfo.DEFAULT_NAME}.xlsx")
 
 # 파일 유틸리티
 def make_backup_file():
     wb = open(read_only=False)
-    wb.save(f"{omikron.config.DATA_DIR}/data/backup/{ClassInfo.DEFAULT_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
+    wb.save(f"{tdm.config.DATA_DIR}/data/backup/{ClassInfo.DEFAULT_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
 
 def get_class_info(class_name:str, ws:Worksheet = None):
     """
@@ -165,7 +165,7 @@ def make_temp_file_for_update(new_class_list:list[str]):
         while ws.cell(row, ClassInfo.CLASS_NAME_COLUMN).value is not None and ws.cell(row, ClassInfo.CLASS_NAME_COLUMN).value not in new_class_list:
             ws.delete_rows(row)
 
-    temp_path = os.path.abspath(f'{omikron.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx')
+    temp_path = os.path.abspath(f'{tdm.config.DATA_DIR}/{ClassInfo.TEMP_FILE_NAME}.xlsx')
 
     if len(unregistered_class_names) == 0:
         save_to_temp(wb)

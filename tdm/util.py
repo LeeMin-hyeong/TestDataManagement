@@ -2,7 +2,7 @@ from copy import copy
 from datetime import datetime
 from openpyxl.cell import Cell
 from openpyxl.styles import PatternFill
-from omikron.style import FILL_BELOW_60, FILL_BELOW_70, FILL_BELOW_80, FILL_CLASS_AVG, FILL_STUDENT_AVG, FILL_NONE
+from tdm.style import FILL_BELOW_60, FILL_BELOW_70, FILL_BELOW_80, FILL_CLASS_AVG, FILL_STUDENT_AVG, FILL_NONE
 
 def calculate_makeup_test_schedule(makeup_test_weekday:str, makeup_test_date:dict[str:datetime]):
     """

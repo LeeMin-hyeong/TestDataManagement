@@ -135,11 +135,12 @@ dmypy.json
 # Mac OS
 .DS_Store
 
-# Omikron files
+# tdm files
 data
 *.xlsx
 config.json
 init.bat
+license.json
 
 # EXE files
 *.exe

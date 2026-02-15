@@ -9,20 +9,20 @@ from openpyxl.utils.cell import get_column_letter as gcl
 from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.worksheet.worksheet import Worksheet
 
-import omikron.chrome
-import omikron.classinfo
-import omikron.config
-import omikron.dataform
-import omikron.studentinfo
+import tdm.chrome
+import tdm.classinfo
+import tdm.config
+import tdm.dataform
+import tdm.studentinfo
 
-from omikron.defs import DataFile, DataForm
-from omikron.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
-from omikron.util import copy_cell, class_average_color, student_average_color, test_score_color
-from omikron.progress import Progress
-from omikron.style import BORDER_BOTTOM_MEDIUM_000, BORDER_BOTTOM_THIN_9090, BORDER_TOP_THIN_9090_BOTTOM_MEDIUM_000, BORDER_TOP_MEDIUM_000
-from omikron.style import ALIGN_CENTER, ALIGN_CENTER_WRAP
-from omikron.style import FONT_BOLD, FONT_BOLD_STRIKE, FONT_STRIKE, FONT_BOLD_RED, FONT_RED
-from omikron.style import FILL_NEW_STUDENT, FILL_NONE
+from tdm.defs import DataFile, DataForm
+from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
+from tdm.util import copy_cell, class_average_color, student_average_color, test_score_color
+from tdm.progress import Progress
+from tdm.style import BORDER_BOTTOM_MEDIUM_000, BORDER_BOTTOM_THIN_9090, BORDER_TOP_THIN_9090_BOTTOM_MEDIUM_000, BORDER_TOP_MEDIUM_000
+from tdm.style import ALIGN_CENTER, ALIGN_CENTER_WRAP
+from tdm.style import FONT_BOLD, FONT_BOLD_STRIKE, FONT_STRIKE, FONT_BOLD_RED, FONT_RED
+from tdm.style import FILL_NEW_STUDENT, FILL_NONE
 
 class NoReservedColumnError(Exception):
     """
@@ -45,15 +45,15 @@ def make_file():
     for col in range(1, DataFile.DATA_COLUMN):
         ws.cell(1, col).border = BORDER_BOTTOM_MEDIUM_000
 
-    class_wb = omikron.classinfo.open(True)
-    class_ws = omikron.classinfo.open_worksheet(class_wb)
+    class_wb = tdm.classinfo.open(True)
+    class_ws = tdm.classinfo.open_worksheet(class_wb)
 
     # 반 루프
-    for class_name, student_list in omikron.chrome.get_class_student_dict().items():
+    for class_name, student_list in tdm.chrome.get_class_student_dict().items():
         if len(student_list) == 0:
             continue
 
-        exist, teacher_name, _, _, mock_test_check = omikron.classinfo.get_class_info(class_name, ws=class_ws)
+        exist, teacher_name, _, _, mock_test_check = tdm.classinfo.get_class_info(class_name, ws=class_ws)
         if not exist: continue
 
         for i in range(2):
@@ -110,33 +110,33 @@ def make_file():
 
 def open(data_only:bool=False, read_only:bool=False) -> xl.Workbook:
     try:
-        return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
+        return xl.load_workbook(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
     except PermissionError:
-        raise ReopenFileException(f"{omikron.config.DATA_FILE_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+        raise ReopenFileException(f"{tdm.config.DATA_FILE_NAME} 파일에 접근할 수 없습니다.\n파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
     except zipfile.BadZipFile:
-        raise ReopenFileException(f"{omikron.config.DATA_FILE_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
+        raise ReopenFileException(f"{tdm.config.DATA_FILE_NAME} 파일을 직접 연 후 닫으면 문제가 해결될 수 있습니다.")
 
 def open_temp(data_only:bool=False, read_only:bool=False) -> xl.Workbook:
-    return xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
+    return xl.load_workbook(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx", data_only=data_only, read_only=read_only)
 
 def save(wb:xl.Workbook):
     try:
-        wb.save(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx")
+        wb.save(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
     except:
-        raise FileOpenException(f"{omikron.config.DATA_FILE_NAME} 파일을 닫은 뒤 다시 시도해주세요")
+        raise FileOpenException(f"{tdm.config.DATA_FILE_NAME} 파일을 닫은 뒤 다시 시도해주세요")
 
 def save_to_temp(wb:xl.Workbook):
-    wb.save(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
-    os.system(f"attrib +h {omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+    wb.save(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+    os.system(f"attrib +h {tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
 
 def delete_temp():
     try:
-        os.remove(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+        os.remove(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
     except:
         pass
 
 def isopen() -> bool:
-    return os.path.isfile(f"{omikron.config.DATA_DIR}/data/~${omikron.config.DATA_FILE_NAME}.xlsx")
+    return os.path.isfile(f"{tdm.config.DATA_DIR}/data/~${tdm.config.DATA_FILE_NAME}.xlsx")
 
 def file_validation():
     wb = open(read_only=True)
@@ -149,7 +149,7 @@ def file_validation():
 # 파일 유틸리티
 def make_backup_file():
     wb = open()
-    wb.save(f"{omikron.config.DATA_DIR}/data/backup/{omikron.config.DATA_FILE_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
+    wb.save(f"{tdm.config.DATA_DIR}/data/backup/{tdm.config.DATA_FILE_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
 
 def get_data_sorted_dict(mocktest = False):
     """
@@ -163,13 +163,13 @@ def get_data_sorted_dict(mocktest = False):
 
     CLASS_NAME_COLUMN, _, STUDENT_NAME_COLUMN, AVERAGE_SCORE_COLUMN = find_dynamic_columns(ws)
 
-    class_wb = omikron.classinfo.open()
-    class_ws = omikron.classinfo.open_worksheet(class_wb)
+    class_wb = tdm.classinfo.open()
+    class_ws = tdm.classinfo.open_worksheet(class_wb)
 
     class_student_dict = {}
     class_test_dict    = {}
 
-    for class_name in omikron.classinfo.get_class_names(class_ws, mocktest=mocktest):
+    for class_name in tdm.classinfo.get_class_names(class_ws, mocktest=mocktest):
         student_index_dict = {}
         test_index_dict    = {}
         for row in range(2, ws.max_row+1):
@@ -291,15 +291,15 @@ def save_test_data(filepath:str, prog: Progress):
     데이터 양식에 작성된 데이터를 데이터 파일에 저장
     """
     # 임시 파일 삭제
-    if os.path.isfile(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx"):
+    if os.path.isfile(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx"):
         delete_temp()
 
-    form_wb = omikron.dataform.open(filepath)
-    form_ws = omikron.dataform.open_worksheet(form_wb)
+    form_wb = tdm.dataform.open(filepath)
+    form_ws = tdm.dataform.open_worksheet(form_wb)
 
     # 학생 정보 열기
-    student_wb = omikron.studentinfo.open(True)
-    student_ws = omikron.studentinfo.open_worksheet(student_wb)
+    student_wb = tdm.studentinfo.open(True)
+    student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
     file_validation()
 
@@ -412,7 +412,7 @@ def save_test_data(filepath:str, prog: Progress):
     excel = None
     try:
         excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
         wb_com = excel.Workbooks.Open(abs_path)
         wb_com.Save()
         wb_com.Close()
@@ -452,7 +452,7 @@ def save_test_data(filepath:str, prog: Progress):
         if ws.cell(row, STUDENT_NAME_COLUMN).font.color is not None and ws.cell(row, STUDENT_NAME_COLUMN).font.color.rgb == "FFFF0000":
             continue
 
-        exist, _, _, new_student = omikron.studentinfo.get_student_info(student_ws, ws.cell(row, STUDENT_NAME_COLUMN).value)
+        exist, _, _, new_student = tdm.studentinfo.get_student_info(student_ws, ws.cell(row, STUDENT_NAME_COLUMN).value)
         if exist:
             if new_student:
                 ws.cell(row, STUDENT_NAME_COLUMN).fill = FILL_NEW_STUDENT
@@ -470,7 +470,7 @@ def save_test_data(filepath:str, prog: Progress):
 def save_individual_test_data(target_row:int, target_col:int, test_score:int|float):
     """정규 시험에 미응시한 학생의 결과를 입력하고 해당 반의 평균을 반환"""
     # 임시 파일 삭제
-    if os.path.isfile(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx"):
+    if os.path.isfile(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx"):
         delete_temp()
 
     file_validation()
@@ -492,7 +492,7 @@ def save_individual_test_data(target_row:int, target_col:int, test_score:int|flo
     excel = None
     try:
         excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{omikron.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
+        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
         wb_com = excel.Workbooks.Open(abs_path)
         wb_com.Save()
         wb_com.Close()
@@ -543,7 +543,7 @@ def conditional_formatting():
     excel = None
     try:
         excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx")
+        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
         wb_com = excel.Workbooks.Open(abs_path)
         wb_com.Save()
         wb_com.Close()
@@ -559,8 +559,8 @@ def conditional_formatting():
 
     wb           = open()
     data_only_wb = open(data_only=True, read_only=True)
-    student_wb   = omikron.studentinfo.open()
-    student_ws   = omikron.studentinfo.open_worksheet(student_wb)
+    student_wb   = tdm.studentinfo.open()
+    student_ws   = tdm.studentinfo.open_worksheet(student_wb)
 
     ws           = wb[DataFile.DEFAULT_SHEET_NAME]
     data_only_ws = data_only_wb[DataFile.DEFAULT_SHEET_NAME]
@@ -630,7 +630,7 @@ def conditional_formatting():
             continue
 
         # 신규생 하이라이트
-        exist, _, _, new_student = omikron.studentinfo.get_student_info(student_ws, ws.cell(row, STUDENT_NAME_COLUMN).value)
+        exist, _, _, new_student = tdm.studentinfo.get_student_info(student_ws, ws.cell(row, STUDENT_NAME_COLUMN).value)
         if exist:
             if new_student:
                 ws.cell(row, STUDENT_NAME_COLUMN).fill = FILL_NEW_STUDENT
@@ -655,14 +655,14 @@ def update_class(prog: Progress | None = None):
 
     make_backup_file()
 
-    new_class_names = set(omikron.classinfo.get_new_class_names())
+    new_class_names = set(tdm.classinfo.get_new_class_names())
 
     # 조건부 서식 수식 로딩
     pythoncom.CoInitialize()
     excel = None
     try:
         excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{omikron.config.DATA_DIR}/data/{omikron.config.DATA_FILE_NAME}.xlsx")
+        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
         wb_com = excel.Workbooks.Open(abs_path)
         wb_com.Save()
         wb_com.Close()
@@ -675,7 +675,7 @@ def update_class(prog: Progress | None = None):
         pythoncom.CoUninitialize()
 
     # 지난 데이터 파일이 없으면 새로 생성
-    if not os.path.isfile(f"{omikron.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx"):
+    if not os.path.isfile(f"{tdm.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx"):
         pre_data_wb = xl.Workbook()
         pre_data_ws = pre_data_wb.worksheets[0]
         pre_data_ws.title = DataFile.DEFAULT_SHEET_NAME
@@ -691,9 +691,9 @@ def update_class(prog: Progress | None = None):
             pre_data_ws.cell(1, col).alignment = ALIGN_CENTER
             pre_data_ws.cell(1, col).border    = BORDER_BOTTOM_MEDIUM_000
 
-        pre_data_wb.save(f"{omikron.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
+        pre_data_wb.save(f"{tdm.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
     else:
-        pre_data_wb = xl.load_workbook(f"{omikron.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
+        pre_data_wb = xl.load_workbook(f"{tdm.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
 
     # 지난 데이터 이동
     data_only_wb = open(data_only=True) # 데이터가 더이상 수정되지 않으므로 읽기 전용으로 불러옴
@@ -730,7 +730,7 @@ def update_class(prog: Progress | None = None):
 
     data_only_wb.close()
     del data_only_wb
-    pre_data_wb.save(f"{omikron.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
+    pre_data_wb.save(f"{tdm.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx")
     del pre_data_wb
 
     # 데이터 파일 지난 데이터 삭제 및 신규 반 추가
@@ -766,10 +766,10 @@ def update_class(prog: Progress | None = None):
     unregistered_class_names = sorted(list(new_class_names.difference(old_class_names)))
 
     if len(unregistered_class_names) > 0:
-        class_wb = omikron.classinfo.open_temp()
-        class_ws = omikron.classinfo.open_worksheet(class_wb)
+        class_wb = tdm.classinfo.open_temp()
+        class_ws = tdm.classinfo.open_worksheet(class_wb)
 
-        class_student_dict = omikron.chrome.get_class_student_dict()
+        class_student_dict = tdm.chrome.get_class_student_dict()
 
         ws = wb[DataFile.DEFAULT_SHEET_NAME]
 
@@ -788,7 +788,7 @@ def update_class(prog: Progress | None = None):
                 temp_name = class_name[:-7]
             if len(class_student_dict[temp_name]) == 0 :
                 continue
-            exist, teacher_name, _, _, _ = omikron.classinfo.get_class_info(temp_name, ws=class_ws)
+            exist, teacher_name, _, _, _ = tdm.classinfo.get_class_info(temp_name, ws=class_ws)
             if not exist: continue
 
             # 시험명

@@ -9,15 +9,17 @@ from pyloid.utils import (
 from pyloid.serve import pyloid_serve
 from pyloid import Pyloid
 from server import server
+from license import verify_license_or_exit
 
 WIDTH, HEIGHT = 1400, 830
 
 
 def main():
-    app = Pyloid(app_name="Omikron", single_instance=True, server=server)
+    verify_license_or_exit()
+    app = Pyloid(app_name="tdm", single_instance=True, server=server)
 
-    app.set_icon(get_production_path("src-pyloid/icons/omikron_icon.ico"))
-    app.set_tray_icon(get_production_path("src-pyloid/icons/omikron_icon.ico"))
+    app.set_icon(get_production_path("src-pyloid/icons/tdm_icon.ico"))
+    app.set_tray_icon(get_production_path("src-pyloid/icons/tdm_icon.ico"))
 
     ############################## Tray ################################
     def on_double_click():
@@ -39,7 +41,7 @@ def main():
     if is_production():
         url = pyloid_serve(directory=get_production_path("dist-front"))
         window = app.create_window(
-            title="Omikron",
+            title="테스트 데이터 관리",
             width=WIDTH,
             height=HEIGHT,
             transparent=True,
@@ -47,7 +49,7 @@ def main():
         window.load_url(url)
     else:
         window = app.create_window(
-            title="Omikron-dev",
+            title="테스트 데이터 관리-dev",
             dev_tools=True,
             width=WIDTH,
             height=HEIGHT,

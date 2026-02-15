@@ -1,6 +1,6 @@
-import type { ActionMeta, OmikronActionKey } from "@/types/omikron";
+import type { ActionMeta, tdmActionKey } from "@/types/tdm";
 
-export const descriptions: Record<OmikronActionKey, ActionMeta> = {
+export const descriptions: Record<tdmActionKey, ActionMeta> = {
   "welcome": {
     title: "환영합니다",
     guide: "",

@@ -17,16 +17,16 @@ import webbrowser
 
 from pyloid.rpc import PyloidRPC, RPCContext
 
-from omikron.progress import Progress
-import omikron.config
+from tdm.progress import Progress
+import tdm.config
 
-import omikron.classinfo
-import omikron.chrome
-import omikron.datafile
-import omikron.dataform
-import omikron.studentinfo
-import omikron.makeuptest
-from omikron.exception import NoMatchingSheetException, FileOpenException
+import tdm.classinfo
+import tdm.chrome
+import tdm.datafile
+import tdm.dataform
+import tdm.studentinfo
+import tdm.makeuptest
+from tdm.exception import NoMatchingSheetException, FileOpenException
 
 
 ####################################### 상태 관리 메서드 #######################################
@@ -159,7 +159,7 @@ def _open_path_cross_platform(path: str):
 
 def _decode_upload_to_temp(filename: str, b64: str) -> Path:
     """업로드된 base64 데이터를 임시 파일로 저장"""
-    tmp_root = Path(tempfile.mkdtemp(prefix="omikron_job_"))
+    tmp_root = Path(tempfile.mkdtemp(prefix="tdm_job_"))
     safe_name = Path(filename or "upload.bin").name
     tmp_path = tmp_root / safe_name
     try:
@@ -196,14 +196,14 @@ def _update_class_job_process(job_id: str, q: multiprocessing.Queue) -> None:
 
     prog.info("반 업데이트 준비중...")
     try:
-        omikron.datafile.update_class(prog)
+        tdm.datafile.update_class(prog)
         prog.step("반 정보 파일 최신화 중...")
-        omikron.classinfo.update_class(prog)
+        tdm.classinfo.update_class(prog)
         prog.done("반 업데이트가 완료되었습니다.")
     except Exception:
         prog.error(f"예상치 못한 오류가 발생했습니다:\n {traceback.format_exc()}")
     finally:
-        omikron.classinfo.delete_temp()
+        tdm.classinfo.delete_temp()
 
 
 def _send_exam_message_job_process(
@@ -225,7 +225,7 @@ def _send_exam_message_job_process(
         "total": 3,
         "level": "info",
         "status": "running",
-        "message": "?‘ì—…??ì¤€ë¹„í•˜ê³??ˆìŠµ?ˆë‹¤.",
+        "message": "작업을 준비하고 있습니다.",
         "warnings": [],
     })
 
@@ -234,8 +234,8 @@ def _send_exam_message_job_process(
         tmp_file = _decode_upload_to_temp(filename, b64)
 
         try:
-            omikron.dataform.data_validation(str(tmp_file))
-        except omikron.dataform.DataValidationException as exc:
+            tdm.dataform.data_validation(str(tmp_file))
+        except tdm.dataform.DataValidationException as exc:
             prog.error(f"데이터 검증 오류가 발생하였습니다:\n{exc}")
             return
         prog.step("데이터 입력 양식 검증 완료")
@@ -243,7 +243,7 @@ def _send_exam_message_job_process(
         for k, v in makeup_test_date.items():
             makeup_test_date[k] = datetime.strptime(v, "%Y-%m-%d")
 
-        ok = omikron.chrome.send_test_result_message(str(tmp_file), makeup_test_date, prog)
+        ok = tdm.chrome.send_test_result_message(str(tmp_file), makeup_test_date, prog)
         if not ok:
             prog.error("메시지 작성 중 오류가 발생했습니다.")
             return
@@ -277,7 +277,7 @@ def _save_exam_job_process(
         "total": 4,
         "level": "info",
         "status": "running",
-        "message": "?‘ì—… ?€ê¸?ì¤?..",
+        "message": "작업을 준비하고 있습니다.",
         "warnings": [],
     })
 
@@ -286,8 +286,8 @@ def _save_exam_job_process(
         tmp_file = _decode_upload_to_temp(filename, b64)
 
         try:
-            omikron.dataform.data_validation(str(tmp_file))
-        except omikron.dataform.DataValidationException as exc:
+            tdm.dataform.data_validation(str(tmp_file))
+        except tdm.dataform.DataValidationException as exc:
             prog.error(f"데이터 검증 오류가 발생하였습니다:\n {exc}")
             return
         prog.step("데이터 입력 양식 검증 완료")
@@ -296,19 +296,19 @@ def _save_exam_job_process(
             makeup_test_date[k] = datetime.strptime(v, "%Y-%m-%d")
 
         try:
-            datafile_wb = omikron.datafile.save_test_data(str(tmp_file), prog)
-            makeuptest_wb = omikron.makeuptest.save_makeup_test_list(str(tmp_file), makeup_test_date, prog)
+            datafile_wb = tdm.datafile.save_test_data(str(tmp_file), prog)
+            makeuptest_wb = tdm.makeuptest.save_makeup_test_list(str(tmp_file), makeup_test_date, prog)
             prog.step("재시험 명단 입력 완료")
         except NoMatchingSheetException as e:
             prog.error(f"파일에서 목표 시트를 찾을 수 없습니다:\n {e}")
             return
-        except omikron.datafile.NoReservedColumnError as e:
+        except tdm.datafile.NoReservedColumnError as e:
             prog.error(f"파일에 필수 열이 없습니다:\n {e}")
             return
 
         try:
-            omikron.datafile.save(datafile_wb)
-            omikron.makeuptest.save(makeuptest_wb)
+            tdm.datafile.save(datafile_wb)
+            tdm.makeuptest.save(makeuptest_wb)
         except FileOpenException as e:
             prog.error(f"파일이 열려 있습니다:\n {e}")
             return
@@ -320,7 +320,7 @@ def _save_exam_job_process(
         prog.error(f"예상치 못한 오류가 발생했습니다:\n {traceback.format_exc()}")
         return
     finally:
-        omikron.datafile.delete_temp()
+        tdm.datafile.delete_temp()
         if tmp_file:
             _cleanup_temp(tmp_file)
 
@@ -333,16 +333,16 @@ async def check_data_files(ctx: RPCContext) -> Dict[str, Any]:
     실행 디렉터리에 '반 정보.xlsx', '학생 정보.xlsx' 존재 여부와
     config.json의 dataFileName으로 './data/<name>.xlsx' 존재 여부 확인
     """
-    cwd = Path(omikron.config.DATA_DIR)
+    cwd = Path(tdm.config.DATA_DIR)
     class_info = cwd / "반 정보.xlsx"
     student_info = cwd / "학생 정보.xlsx"
-    data_file_name = omikron.config.DATA_FILE_NAME
+    data_file_name = tdm.config.DATA_FILE_NAME
     data_file = cwd / "data" / f"{data_file_name}.xlsx" if data_file_name else None
 
     has_class = class_info.is_file()
     has_student = student_info.is_file()
     has_data = bool(data_file_name) and data_file and data_file.is_file()
-    data_dir_valid = omikron.config.DATA_DIR_VALID
+    data_dir_valid = tdm.config.DATA_DIR_VALID
 
     missing = []
     if not data_dir_valid:
@@ -365,7 +365,7 @@ async def check_data_files(ctx: RPCContext) -> Dict[str, Any]:
         "data_dir_valid": data_dir_valid,
         "data_file_name": data_file_name,
         "cwd": str(cwd),
-        "data_dir": omikron.config.DATA_DIR,
+        "data_dir": tdm.config.DATA_DIR,
         "missing": missing,
     }
 
@@ -373,7 +373,7 @@ async def check_data_files(ctx: RPCContext) -> Dict[str, Any]:
 @server.method()
 async def get_datafile_data(ctx: RPCContext, mocktest = False) -> Dict[Any, Any]:
     try:
-        return {"ok": True, "data": omikron.datafile.get_data_sorted_dict(mocktest)}
+        return {"ok": True, "data": tdm.datafile.get_data_sorted_dict(mocktest)}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -381,7 +381,7 @@ async def get_datafile_data(ctx: RPCContext, mocktest = False) -> Dict[Any, Any]
 @server.method()
 async def get_aisosic_data(ctx: RPCContext):
     try:
-        return {"ok": True, "data": omikron.chrome.get_class_names()}
+        return {"ok": True, "data": tdm.chrome.get_class_names()}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -389,7 +389,7 @@ async def get_aisosic_data(ctx: RPCContext):
 @server.method()
 async def get_aisosic_student_data(ctx: RPCContext):
     try:
-        return {"ok": True, "data": omikron.chrome.get_class_student_dict()}
+        return {"ok": True, "data": tdm.chrome.get_class_student_dict()}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -397,8 +397,8 @@ async def get_aisosic_student_data(ctx: RPCContext):
 @server.method()
 async def check_aisosic_difference(ctx: RPCContext):
     try:
-        aisosic = omikron.chrome.get_class_student_dict()
-        datafile_raw = omikron.datafile.get_data_sorted_dict()
+        aisosic = tdm.chrome.get_class_student_dict()
+        datafile_raw = tdm.datafile.get_data_sorted_dict()
         if isinstance(datafile_raw, (list, tuple)) and len(datafile_raw) >= 1:
             datafile = datafile_raw[0]
         else:
@@ -422,7 +422,7 @@ async def check_aisosic_difference(ctx: RPCContext):
 @server.method()
 async def get_makeuptest_data(ctx: RPCContext):
     try:
-        return {"ok": True, "data": omikron.makeuptest.get_studnet_test_index_dict()}
+        return {"ok": True, "data": tdm.makeuptest.get_studnet_test_index_dict()}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -430,7 +430,7 @@ async def get_makeuptest_data(ctx: RPCContext):
 @server.method()
 async def get_class_list(ctx: RPCContext):
     try:
-        return {"ok": True, "data": omikron.classinfo.get_class_names()}
+        return {"ok": True, "data": tdm.classinfo.get_class_names()}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -438,7 +438,7 @@ async def get_class_list(ctx: RPCContext):
 @server.method()
 async def get_class_info(ctx: RPCContext, class_name:str):
     try:
-        return {"ok": True, "data": omikron.classinfo.get_class_info(class_name)}
+        return {"ok": True, "data": tdm.classinfo.get_class_info(class_name)}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -446,7 +446,7 @@ async def get_class_info(ctx: RPCContext, class_name:str):
 @server.method()
 async def get_new_class_list(ctx: RPCContext):
     try:
-        return {"ok": True, "data": omikron.classinfo.get_new_class_names()}
+        return {"ok": True, "data": tdm.classinfo.get_new_class_names()}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -454,7 +454,7 @@ async def get_new_class_list(ctx: RPCContext):
 @server.method()
 async def is_cell_empty(ctx: RPCContext, row:int, col:int):
     try:
-        empty, value = omikron.datafile.is_cell_empty(row, col)
+        empty, value = tdm.datafile.is_cell_empty(row, col)
         return {"ok": True, "empty": empty, "value": value}
     except Exception as e:
             return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -465,10 +465,10 @@ async def is_cell_empty(ctx: RPCContext, row:int, col:int):
 @server.method()
 async def change_data_dir(ctx:RPCContext):
     try:
-        new_dir = ctx.pyloid.select_directory_dialog(omikron.config.DATA_DIR)
+        new_dir = ctx.pyloid.select_directory_dialog(tdm.config.DATA_DIR)
         if new_dir is None: return {"ok": False}
         abspath = os.path.abspath(new_dir)
-        omikron.config.change_data_path(abspath)
+        tdm.config.change_data_path(abspath)
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -477,7 +477,7 @@ async def change_data_dir(ctx:RPCContext):
 @server.method()
 async def change_data_file_name(ctx:RPCContext, new_filename:str) -> Dict[str, Any]:
     try:
-        omikron.config.change_data_file_name(new_filename)
+        tdm.config.change_data_file_name(new_filename)
         return {"ok": True}
     except FileExistsError as e:
         return {"ok": False, "error": str(e)}
@@ -670,8 +670,8 @@ async def start_update_class(ctx: RPCContext) -> Dict[str, Any]:
 @server.method()
 async def make_class_info(ctx: RPCContext):
     try:
-        omikron.classinfo.make_file()
-        return {"ok": True, "path": str(Path(omikron.config.DATA_DIR) / '반 정보.xlsx')}
+        tdm.classinfo.make_file()
+        return {"ok": True, "path": str(Path(tdm.config.DATA_DIR) / '반 정보.xlsx')}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -679,15 +679,15 @@ async def make_class_info(ctx: RPCContext):
 @server.method()
 async def make_data_file(ctx: RPCContext):
     try:
-        cwd = Path(omikron.config.DATA_DIR)
+        cwd = Path(tdm.config.DATA_DIR)
         class_info = cwd / "반 정보.xlsx"
         if not class_info.is_file():
             return {"ok": False, "error": "반 정보.xlsx가 먼저 필요합니다."}
 
-        if not omikron.config.DATA_FILE_NAME:
+        if not tdm.config.DATA_FILE_NAME:
             return {"ok": False, "error": "config.json의 dataFileName을 설정해 주세요."}
 
-        omikron.datafile.make_file()
+        tdm.datafile.make_file()
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -696,8 +696,8 @@ async def make_data_file(ctx: RPCContext):
 @server.method()
 async def make_student_info(ctx: RPCContext):
     try:
-        omikron.studentinfo.make_file()
-        return {"ok": True, "path": str(Path(omikron.config.DATA_DIR) / '학생 정보.xlsx')}
+        tdm.studentinfo.make_file()
+        return {"ok": True, "path": str(Path(tdm.config.DATA_DIR) / '학생 정보.xlsx')}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 
@@ -705,7 +705,7 @@ async def make_student_info(ctx: RPCContext):
 @server.method()
 async def make_data_form(ctx: RPCContext):
     try:
-        omikron.dataform.make_file()
+        tdm.dataform.make_file()
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -714,7 +714,7 @@ async def make_data_form(ctx: RPCContext):
 @server.method()
 async def reapply_conditional_format(ctx: RPCContext):
     try:
-        warnings = omikron.datafile.conditional_formatting()
+        warnings = tdm.datafile.conditional_formatting()
         return {"ok": True, "warnings": warnings}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -723,7 +723,7 @@ async def reapply_conditional_format(ctx: RPCContext):
 @server.method()
 async def update_student_info(ctx: RPCContext):
     try:
-        omikron.studentinfo.update_student()
+        tdm.studentinfo.update_student()
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -732,12 +732,12 @@ async def update_student_info(ctx: RPCContext):
 @server.method()
 async def add_student(ctx: RPCContext, target_student_name, target_class_name):
     try:
-        if not omikron.chrome.check_student_exists(target_student_name, target_class_name):
+        if not tdm.chrome.check_student_exists(target_student_name, target_class_name):
             return {"ok": False, "error": f"아이소식에 {target_student_name} 학생이 {target_class_name} 반에 업데이트 되지 않아 중단되었습니다."}
 
-        warnings = omikron.datafile.add_student(target_student_name, target_class_name)
+        warnings = tdm.datafile.add_student(target_student_name, target_class_name)
 
-        omikron.studentinfo.add_student(target_student_name)
+        tdm.studentinfo.add_student(target_student_name)
 
         return {"ok": True, "warnings": warnings}
     except Exception as e:
@@ -747,10 +747,10 @@ async def add_student(ctx: RPCContext, target_student_name, target_class_name):
 @server.method()
 async def remove_student(ctx: RPCContext, target_class_name, target_student_name):
     try:
-        omikron.datafile.delete_student(target_class_name, target_student_name)
+        tdm.datafile.delete_student(target_class_name, target_student_name)
 
-        if not omikron.datafile.check_student_exist:
-            omikron.studentinfo.delete_student(target_student_name)
+        if not tdm.datafile.check_student_exist:
+            tdm.studentinfo.delete_student(target_student_name)
 
         return {"ok": True}
     except Exception as e:
@@ -760,10 +760,10 @@ async def remove_student(ctx: RPCContext, target_class_name, target_student_name
 @server.method()
 async def move_student(ctx: RPCContext, target_student_name, target_class_name, current_class_name):
     try:
-        if not omikron.chrome.check_student_exists(target_student_name, target_class_name):
+        if not tdm.chrome.check_student_exists(target_student_name, target_class_name):
             return {"ok": False, "error": f"아이소식에 {target_student_name} 학생이 {target_class_name} 반에 업데이트 되지 않아 중단되었습니다."}
 
-        omikron.datafile.move_student(target_student_name, target_class_name, current_class_name)
+        tdm.datafile.move_student(target_student_name, target_class_name, current_class_name)
 
         return {"ok": True}
     except Exception as e:
@@ -773,9 +773,9 @@ async def move_student(ctx: RPCContext, target_student_name, target_class_name, 
 @server.method()
 async def change_class_info(ctx: RPCContext, target_class_name, target_teacher_name):
     try:
-        omikron.classinfo.change_class_info(target_class_name, target_teacher_name)
+        tdm.classinfo.change_class_info(target_class_name, target_teacher_name)
 
-        omikron.datafile.change_class_info(target_class_name, target_teacher_name)
+        tdm.datafile.change_class_info(target_class_name, target_teacher_name)
 
         return {"ok": True}
     except Exception as e:
@@ -785,7 +785,7 @@ async def change_class_info(ctx: RPCContext, target_class_name, target_teacher_n
 @server.method()
 async def make_temp_class_info(ctx: RPCContext, new_class_list):
     try:
-        filepath = omikron.classinfo.make_temp_file_for_update(new_class_list)
+        filepath = tdm.classinfo.make_temp_file_for_update(new_class_list)
         return {"ok": True, "path": filepath}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -794,14 +794,14 @@ async def make_temp_class_info(ctx: RPCContext, new_class_list):
 @server.method()
 async def update_class(ctx: RPCContext):
     try:
-        omikron.datafile.update_class()
-        omikron.classinfo.update_class()
+        tdm.datafile.update_class()
+        tdm.classinfo.update_class()
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
     finally:
         try:
-            omikron.classinfo.delete_temp()
+            tdm.classinfo.delete_temp()
         except:
             pass
 
@@ -809,7 +809,7 @@ async def update_class(ctx: RPCContext):
 @server.method()
 async def delete_class_info_temp(ctx: RPCContext):
     try:
-        omikron.classinfo.delete_temp()
+        tdm.classinfo.delete_temp()
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -837,12 +837,12 @@ async def save_individual_result(ctx: RPCContext, student_name:str, class_name:s
         for k, v in makeup_test_date.items():
             makeup_test_date[k] = datetime.strptime(v, "%Y-%m-%d")
 
-        test_average = omikron.datafile.save_individual_test_data(target_row, target_col, test_score)
+        test_average = tdm.datafile.save_individual_test_data(target_row, target_col, test_score)
 
         if test_score < 80 and not makeup_test_check:
-            omikron.makeuptest.save_individual_makeup_test(student_name, class_name, test_name, test_score, makeup_test_date, prog)
+            tdm.makeuptest.save_individual_makeup_test(student_name, class_name, test_name, test_score, makeup_test_date, prog)
 
-        omikron.chrome.send_individual_test_message(student_name, class_name, test_name, test_score, test_average, makeup_test_check, makeup_test_date, prog)
+        tdm.chrome.send_individual_test_message(student_name, class_name, test_name, test_score, test_average, makeup_test_check, makeup_test_date, prog)
 
         return {"ok": True}
     except Exception as e:
@@ -852,7 +852,7 @@ async def save_individual_result(ctx: RPCContext, student_name:str, class_name:s
 @server.method()
 async def save_retest_result(ctx: RPCContext, target_row:int, makeup_test_score:str):
     try:
-        omikron.makeuptest.save_makeup_test_result(target_row, makeup_test_score)
+        tdm.makeuptest.save_makeup_test_result(target_row, makeup_test_score)
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -861,13 +861,13 @@ async def save_retest_result(ctx: RPCContext, target_row:int, makeup_test_score:
 @server.method()
 async def change_data_file_name_by_select(ctx: RPCContext):
     try:
-        selected_file = ctx.pyloid.open_file_dialog(f"{omikron.config.DATA_DIR}/data")
+        selected_file = ctx.pyloid.open_file_dialog(f"{tdm.config.DATA_DIR}/data")
         if not selected_file:
             return {"ok": False}
 
         new_filename = Path(selected_file).stem
 
-        omikron.config.change_data_file_name_by_select(new_filename)
+        tdm.config.change_data_file_name_by_select(new_filename)
         return {"ok": True}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
@@ -876,7 +876,7 @@ async def change_data_file_name_by_select(ctx: RPCContext):
 @server.method()
 async def open_file_picker(ctx: RPCContext):
     try:
-        selected_file = ctx.pyloid.open_file_dialog(omikron.config.DATA_DIR)
+        selected_file = ctx.pyloid.open_file_dialog(tdm.config.DATA_DIR)
         if not selected_file:
             return {"ok": False}
 

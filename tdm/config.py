@@ -1,8 +1,8 @@
 import os
 import json
 
-from omikron.errorui import no_config_file_error, corrupted_config_file_error
-from omikron.exception import FileOpenException
+from tdm.errorui import no_config_file_error, corrupted_config_file_error
+from tdm.exception import FileOpenException
 
 def _load_config():
     try:
