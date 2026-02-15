@@ -49,12 +49,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Upgrade Python deps (safe within constraints)
-        shell: pwsh
-        run: |
-          uv sync --upgrade
+          python-version: '3.12'
 
       - name: Project setup
         shell: pwsh
