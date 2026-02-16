@@ -108,7 +108,6 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
         await dialog.error({ title: "오류", message: checked?.error || "비교 중 오류가 발생했습니다.", detail: checked?.detail })
         return
       }
-      setPrecheckStatus("done")
       if (!checked?.data){
         const ok = await dialog.warning({
           title: "아이소식 데이터 불일치",
@@ -122,6 +121,7 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
           return;
         }
       }
+      setPrecheckStatus("done")
       onAction?.("save-exam")
       const b64 = await fileToBase64(file)
       // filename: str, b64: str, makeup_test_date: Dict[str, Any]
