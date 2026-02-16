@@ -11,6 +11,11 @@ export const descriptions: Record<tdmActionKey, ActionMeta> = {
     guide: "아이소식의 반 정보를 불러와 반 목록을 수정합니다. 수정된 반 정보 파일에서 반의 상세 정보를 작성해 주세요.",
     steps: ["반/학기 파라미터 확인", "기존 명부 백업", "신규 명부 반영", "요약 리포트 생성"],
   },
+  "edit-message-config": {
+    title: "아이소식 설정",
+    guide: "아이소식 URL과 메시지 템플릿을 수정합니다.",
+    steps: [],
+  },
   "rename-data-file": {
     title: "데이터 파일 이름 변경",
     guide: "엑셀 데이터 파일의 버전 규칙(예: YYYYMMDD-반이름)에 맞춰 안전하게 이름을 변경합니다.",
