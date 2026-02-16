@@ -90,6 +90,7 @@ jobs:
           Copy-Item -Force "dist/main/main.exe" -Destination "$zipRoot/main.exe"
           Copy-Item -Force "dist/tdm.exe" -Destination "$zipRoot/tdm.exe"
           Copy-Item -Force "dist/main/version.txt" -Destination "$zipRoot/version.txt"
+          Copy-Item -Force "LICENSE" -Destination "$zipRoot/LICENSE"
 
           Compress-Archive -Path $zipRoot -DestinationPath "tdm-win.zip" -Force
           # (선택) SHA256 생성
