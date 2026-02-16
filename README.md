@@ -8,25 +8,11 @@
 
 [릴리즈 설치](https://github.com/LeeMin-hyeong/TestDataManagemnt/releases)
 
-``tdm-win.zip``을 다운받아 압축을 해제하고 ``TDM.exe``를 실행합니다.
+``tdm-win.zip``을 다운받아 압축을 해제하고 ``tdm.exe``를 실행합니다.
 
 ## 프로그램 사용법 및 도움말
 
 ``lisence.json`` 을 발급받아 프로그램을 이용할 수 있습니다.
-
-프로그램을 실행하기 위해 ``config.json`` 파일이 필요합니다.
-
-* ``config.json`` 은 학원 아이소식의 주소와 메세지 양식 등이 포함되어 있습니다.
-``` json
-{
-    "dataFileName": "",
-    "dataDir": "",
-    "url": "",
-    "dailyTest": "",
-    "makeupTest": "",
-    "makeupTestDate": ""
-}
-```
 
 프로그램 실행 및 조작을 위해 다음 프로그램이 필요합니다.
 * Google Chrome

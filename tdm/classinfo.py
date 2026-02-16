@@ -88,6 +88,10 @@ def isopen() -> bool:
 
 # 파일 유틸리티
 def make_backup_file():
+    if not os.path.isdir(f"{tdm.config.DATA_DIR}/data"):
+        os.mkdir(f"{tdm.config.DATA_DIR}/data")
+    if not os.path.isdir(f"{tdm.config.DATA_DIR}/data/backup"):
+        os.mkdir(f"{tdm.config.DATA_DIR}/data/backup")
     wb = open(read_only=False)
     wb.save(f"{tdm.config.DATA_DIR}/data/backup/{ClassInfo.DEFAULT_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
 

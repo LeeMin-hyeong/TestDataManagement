@@ -1,15 +1,17 @@
-from selenium import webdriver
+﻿from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from win32process import CREATE_NO_WINDOW # only works in Windows
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
 import tdm.dataform
 import tdm.studentinfo
 
-from tdm.config import URL, TEST_RESULT_MESSAGE, MAKEUP_TEST_NO_SCHEDULE_MESSAGE, MAKEUP_TEST_SCHEDULE_MESSAGE
+import tdm.config
 from tdm.defs import Chrome, DataForm
 from tdm.util import calculate_makeup_test_schedule, date_to_kor_date
 from tdm.progress import Progress
@@ -24,8 +26,18 @@ def _fetch_aisosik_soup() -> BeautifulSoup:
         "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
     }
 
+    target_host = urlparse(tdm.config.URL).hostname
+
     with requests.Session() as s:
-        r = s.get(URL, headers=headers, timeout=10)
+        try:
+            r = s.get(tdm.config.URL, headers=headers, timeout=10)
+        except requests.exceptions.SSLError:
+            # Some deployed iday-b2 endpoints currently serve expired certs.
+            # Fallback keeps the app usable until server-side certs are fixed.
+            if target_host != "dbserver2.iday-b2.com":
+                raise
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            r = s.get(tdm.config.URL, headers=headers, timeout=10, verify=False)
         r.raise_for_status()
 
         # 인코딩이 애매한 사이트면 아래 라인이 도움 될 수 있음
@@ -180,6 +192,8 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
     """
     기록 양식의 데이터를 추출하여 아이소식 스크립트 작성
     """
+    form_wb = None
+    student_wb = None
     try:
         service = Service()
         service.creation_flags = CREATE_NO_WINDOW
@@ -187,6 +201,9 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-extensions")
         options.add_argument("--blink-settings=imagesEnabled=false")
+        options.add_argument("--ignore-certificate-errors")
+        options.add_argument("--allow-running-insecure-content")
+        options.accept_insecure_certs = True
         options.page_load_strategy = "eager"
         options.add_experimental_option("detach", True)
 
@@ -199,40 +216,27 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         driver = webdriver.Chrome(service=service, options=options)
         
         # 아이소식 접속
-        driver.get(URL)
-        driver.execute_script(f"""
-                              arguments[0].value = '{TEST_RESULT_MESSAGE}';
-                              const el = arguments[0];
-                              el.dispatchEvent(new Event('input',  {"{ bubbles: true }"}));
-                              el.dispatchEvent(new Event('change', {"{ bubbles: true }"}));
-                              el.blur();
-                              document.title = '시험 결과 전송';""", 
-                              driver.find_element(By.XPATH, '//*[@id="ctitle"]')
-                              )
+        driver.get(tdm.config.URL)
+        _set_value_with_events(driver, driver.find_element(By.XPATH, '//*[@id="ctitle"]'), tdm.config.TEST_RESULT_MESSAGE)
+        driver.execute_script("document.title = '시험 결과 전송'")
 
-        driver.execute_script(f"window.open('{URL}')")
+        driver.execute_script("window.open(arguments[0])", tdm.config.URL)
         driver.switch_to.window(driver.window_handles[Chrome.MAKEUPTEST_NO_SCHEDULE_TAB])
-        driver.execute_script(f"""
-                              arguments[0].value = '{MAKEUP_TEST_NO_SCHEDULE_MESSAGE}';
-                              const el = arguments[0];
-                              el.dispatchEvent(new Event('input',  {"{ bubbles: true }"}));
-                              el.dispatchEvent(new Event('change', {"{ bubbles: true }"}));
-                              el.blur();
-                              document.title = '재시험 일정 없는 학생';""", 
-                              driver.find_element(By.XPATH, '//*[@id="ctitle"]')
-                              )
+        _set_value_with_events(
+            driver,
+            driver.find_element(By.XPATH, '//*[@id="ctitle"]'),
+            tdm.config.MAKEUP_TEST_NO_SCHEDULE_MESSAGE,
+        )
+        driver.execute_script("document.title = '재시험 일정 없는 학생'")
 
-        driver.execute_script(f"window.open('{URL}')")
+        driver.execute_script("window.open(arguments[0])", tdm.config.URL)
         driver.switch_to.window(driver.window_handles[Chrome.MAKEUPTEST_SCHEDULE_TAB])
-        driver.execute_script(f"""
-                              arguments[0].value = '{MAKEUP_TEST_SCHEDULE_MESSAGE}';
-                              const el = arguments[0];
-                              el.dispatchEvent(new Event('input',  {"{ bubbles: true }"}));
-                              el.dispatchEvent(new Event('change', {"{ bubbles: true }"}));
-                              el.blur();
-                              document.title = '재시험 일정 있는 학생';""", 
-                              driver.find_element(By.XPATH, '//*[@id="ctitle"]')
-                              )
+        _set_value_with_events(
+            driver,
+            driver.find_element(By.XPATH, '//*[@id="ctitle"]'),
+            tdm.config.MAKEUP_TEST_SCHEDULE_MESSAGE,
+        )
+        driver.execute_script("document.title = '재시험 일정 있는 학생'")
 
         driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
 
@@ -287,6 +291,10 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
                 continue
 
             if type(test_score) not in (int, float):
+                continue
+
+            if class_index is None:
+                # 반 매핑 실패 상태에서는 쓰기 작업을 생성하지 않는다.
                 continue
 
             daily_ops.append((class_index, student_name, test_name, test_score, test_average))
@@ -373,6 +381,9 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         prog.step("재시험 일정 메시지 작성 완료")
 
         driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
+        return True
+    except Exception as e:
+        raise Exception(f"메시지 작성 중 오류가 발생했습니다: {e}")
 
     finally:
         try:
@@ -386,8 +397,6 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         except Exception:
             pass
 
-        return True
-
 def send_individual_test_message(student_name:str, class_name:int, test_name:int, test_score:int, test_average:int, makeup_test_check:bool, makeup_test_date:dict, prog:Progress) -> bool:
     """
     개별 시험에 대한 결과 메시지 전송
@@ -399,115 +408,117 @@ def send_individual_test_message(student_name:str, class_name:int, test_name:int
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-extensions")
     options.add_argument("--blink-settings=imagesEnabled=false")
+    options.add_argument("--ignore-certificate-errors")
+    options.add_argument("--allow-running-insecure-content")
+    options.accept_insecure_certs = True
     options.page_load_strategy = "eager"
-
-    if " (모의고사)" in class_name: class_name = class_name[:-7]
-
-    student_wb = tdm.studentinfo.open()
-    student_ws = tdm.studentinfo.open_worksheet(student_wb)
-
-    options = webdriver.ChromeOptions()
     options.add_experimental_option("detach", True)
+
+    if " (모의고사)" in class_name:
+        class_name = class_name[:-7]
+
+    student_wb = None
+    student_ws = None
     driver = webdriver.Chrome(service=service, options=options)
-    
-    # 아이소식 접속
-    driver.get(URL)
-    driver.execute_script("document.title = '시험 결과 전송'")
-    driver.execute_script(f"arguments[0].value = '{TEST_RESULT_MESSAGE}'", driver.find_element(By.XPATH, '//*[@id="ctitle"]'))
-    driver.find_element(By.XPATH, '//*[@id="ctitle"]').send_keys(' \b')
 
-    # 반 인덱스 dict
-    table_names = driver.find_elements(By.CLASS_NAME, "style1")
-    table_index_dict = {table_name.text.strip() : i for i, table_name in enumerate(table_names)}
-
-    class_index = table_index_dict[class_name]
-
-    # 학생 인덱스 dict
-    trs = driver.find_element(By.ID, f"table_{str(class_index)}").find_elements(By.CLASS_NAME, "style12")
-    student_index_dict = {tr.find_element(By.CLASS_NAME, "style9").text.strip() : i for i, tr in enumerate(trs)}
     try:
-        student_index = student_index_dict[student_name]
-    except KeyError:
-        prog.warning(f"아이소식의 {class_name} 내 {student_name} 학생이 존재하지 않습니다.")
-        return False
+        # 아이소식 접속
+        driver.get(tdm.config.URL)
+        driver.execute_script("document.title = '시험 결과 전송'")
+        _set_value_with_events(driver, driver.find_element(By.XPATH, '//*[@id="ctitle"]'), tdm.config.TEST_RESULT_MESSAGE)
 
-    trs = driver.find_element(By.ID, f"table_{str(class_index)}").find_elements(By.CLASS_NAME, "style12")
-    tds = trs[student_index].find_elements(By.TAG_NAME, "td")
-    driver.execute_script(f"arguments[0].value = '{test_name}'",  tds[0].find_element(By.TAG_NAME, "input"))
-    driver.execute_script(f"arguments[0].value = '{test_score}'", tds[1].find_element(By.TAG_NAME, "input"))
-    tds[2].find_element(By.TAG_NAME, "input").send_keys(test_average)
+        # 반 인덱스 dict (BeautifulSoup 사용으로 DOM 접근 최소화)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        table_names = [el.get_text(strip=True) for el in soup.select(".style1")]
+        table_index_dict = {name: i for i, name in enumerate(table_names) if name}
 
-    if test_score >= 80:
-        return True
-    if makeup_test_check:
-        return True
+        class_index = table_index_dict.get(class_name)
+        if class_index is None:
+            prog.warning(f"아이소식에 {class_name} 반이 존재하지 않습니다.")
+            return False
 
-    # 재시험 안내
-    driver.execute_script(f"window.open('{URL}')")
-    driver.switch_to.window(driver.window_handles[Chrome.INDIVIDUAL_MAKEUPTEST_TAB])
-    driver.execute_script("document.title = '재시험 안내'")
+        # DAILY 탭에서 학생 입력칸 캐시
+        daily_inputs = _cache_table_inputs(driver, class_index)
+        target_inputs = daily_inputs.get(student_name)
+        if not target_inputs:
+            prog.warning(f"아이소식의 {class_name} 내 {student_name} 학생이 존재하지 않습니다.")
+            return False
 
-    # 학생 정보 검색
-    info_exists, makeup_test_weekday, makeup_test_time, _ = tdm.studentinfo.get_student_info(student_ws, student_name)
-    if not info_exists:
-        prog.warning(f"{student_name}의 학생 정보가 존재하지 않습니다.")
+        in0, in1, in2 = target_inputs
+        _set_input(driver, in0, test_name)
+        _set_input(driver, in1, test_score)
+        _set_value_with_events(driver, in2, test_average)
 
-    if info_exists and makeup_test_weekday is not None:
-        # 재시험 일정 계산
-        complete, calculated_schedule, time_index = calculate_makeup_test_schedule(makeup_test_weekday, makeup_test_date)
-        if complete:
-            # 재시험 일정 계산 성공
-            driver.execute_script(f"arguments[0].value = '{MAKEUP_TEST_SCHEDULE_MESSAGE}'", driver.find_element(By.XPATH, '//*[@id="ctitle"]'))
-            driver.find_element(By.XPATH, '//*[@id="ctitle"]').send_keys(' \b')
-            calculated_schedule_str = date_to_kor_date(calculated_schedule)
-
-            trs = driver.find_element(By.ID, f"table_{str(class_index)}").find_elements(By.CLASS_NAME, "style12")
-            tds = trs[student_index].find_elements(By.TAG_NAME, "td")
-            driver.execute_script(f"arguments[0].value = '{test_name}'", tds[0].find_element(By.TAG_NAME, "input"))
-
-            if makeup_test_time is not None:
-                if "/" in str(makeup_test_time):
-                    # 다중 재시험 시간
-                    if len(makeup_test_weekday.split("/")) == len(makeup_test_time.split("/")):
-                        # 재시험 요일 의 구분 개수는 재시험 시간의 구분 개수와 동일
-                        driver.execute_script(f"arguments[0].value = '{calculated_schedule_str} {str(makeup_test_time).split('/')[time_index]}시'", tds[1].find_element(By.TAG_NAME, "input"))
-                        tds[2].find_element(By.TAG_NAME, "input").send_keys(' \b')
-
-                        driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
-
-                        return True
-                    else:
-                        prog.warning(f"{student_name}의 재시험 시간이 올바른 양식이 아닙니다.")
-
-                else:
-                    # 단일 재시험 시간
-                    driver.execute_script(f"arguments[0].value = '{calculated_schedule_str} {str(makeup_test_time)}시'", tds[1].find_element(By.TAG_NAME, "input"))
-                    tds[2].find_element(By.TAG_NAME, "input").send_keys(' \b')
-
-                    driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
-
-                    return True
-
-            # 날짜 지정 / 시간 미지정
-            driver.execute_script(f"arguments[0].value = '{calculated_schedule_str}'", tds[1].find_element(By.TAG_NAME, "input"))
-            tds[2].find_element(By.TAG_NAME, "input").send_keys(' \b')
-
-            driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
-
+        if test_score >= 80 or makeup_test_check:
             return True
-        else:
-            # 재시험 일정 계산 중 오류
-            prog.warning(f"{student_name}의 재시험 요일이 올바른 양식이 아닙니다.")
 
-    # 재시험 일정 없음
-    driver.execute_script(f"arguments[0].value = '{MAKEUP_TEST_NO_SCHEDULE_MESSAGE}'", driver.find_element(By.XPATH, '//*[@id="ctitle"]'))
-    driver.find_element(By.XPATH, '//*[@id="ctitle"]').send_keys(' \b')
-    trs = driver.find_element(By.ID, f"table_{str(class_index)}").find_elements(By.CLASS_NAME, "style12")
-    tds = trs[student_index].find_elements(By.TAG_NAME, "td")
-    driver.execute_script(f"arguments[0].value = '{test_name}'", tds[0].find_element(By.TAG_NAME, "input"))
+        # 재시험 안내가 필요한 경우에만 학생정보 파일 오픈
+        student_wb = tdm.studentinfo.open()
+        student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
-    tds[1].find_element(By.TAG_NAME, "input").send_keys(' \b')
+        # 재시험 탭 오픈
+        driver.execute_script("window.open(arguments[0])", tdm.config.URL)
+        driver.switch_to.window(driver.window_handles[Chrome.INDIVIDUAL_MAKEUPTEST_TAB])
+        driver.execute_script("document.title = '재시험 안내'")
 
-    driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
+        makeup_inputs = _cache_table_inputs(driver, class_index)
+        makeup_target_inputs = makeup_inputs.get(student_name)
+        if not makeup_target_inputs:
+            prog.warning(f"아이소식의 {class_name} 내 {student_name} 학생이 존재하지 않습니다.")
+            driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
+            return False
 
-    return True
+        m0, m1, m2 = makeup_target_inputs
+
+        # 학생 정보 검색
+        info_exists, makeup_test_weekday, makeup_test_time, _ = tdm.studentinfo.get_student_info(student_ws, student_name)
+        if not info_exists:
+            prog.warning(f"{student_name}의 학생 정보가 존재하지 않습니다.")
+
+        if info_exists and makeup_test_weekday is not None:
+            complete, calculated_schedule, time_index = calculate_makeup_test_schedule(makeup_test_weekday, makeup_test_date)
+            if complete:
+                _set_value_with_events(
+                    driver,
+                    driver.find_element(By.XPATH, '//*[@id="ctitle"]'),
+                    tdm.config.MAKEUP_TEST_SCHEDULE_MESSAGE,
+                )
+                _set_input(driver, m0, test_name)
+
+                calculated_schedule_str = date_to_kor_date(calculated_schedule)
+                schedule_text = calculated_schedule_str
+
+                if makeup_test_time is not None:
+                    mt = str(makeup_test_time)
+                    if "/" in mt:
+                        if len(makeup_test_weekday.split("/")) == len(mt.split("/")):
+                            schedule_text = f"{calculated_schedule_str} {mt.split('/')[time_index]}시"
+                        else:
+                            prog.warning(f"{student_name}의 재시험 시간이 올바른 양식이 아닙니다.")
+                    else:
+                        schedule_text = f"{calculated_schedule_str} {mt}시"
+
+                _set_value_with_events(driver, m1, schedule_text)
+                _set_value_with_events(driver, m2, "")
+                driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
+                return True
+            else:
+                prog.warning(f"{student_name}의 재시험 요일이 올바른 양식이 아닙니다.")
+
+        # 재시험 일정 없음
+        _set_value_with_events(
+            driver,
+            driver.find_element(By.XPATH, '//*[@id="ctitle"]'),
+            tdm.config.MAKEUP_TEST_NO_SCHEDULE_MESSAGE,
+        )
+        _set_input(driver, m0, test_name)
+        _set_value_with_events(driver, m1, "")
+
+        driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
+        return True
+    finally:
+        if student_wb is not None:
+            try:
+                student_wb.close()
+            except Exception:
+                pass

@@ -121,11 +121,15 @@ def open_temp(data_only:bool=False, read_only:bool=False) -> xl.Workbook:
 
 def save(wb:xl.Workbook):
     try:
+        if not os.path.isdir(f"{tdm.config.DATA_DIR}/data"):
+            os.mkdir(f"{tdm.config.DATA_DIR}/data")
         wb.save(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
     except:
         raise FileOpenException(f"{tdm.config.DATA_FILE_NAME} 파일을 닫은 뒤 다시 시도해주세요")
 
 def save_to_temp(wb:xl.Workbook):
+    if not os.path.isdir(f"{tdm.config.DATA_DIR}/data"):
+        os.mkdir(f"{tdm.config.DATA_DIR}/data")
     wb.save(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
     os.system(f"attrib +h {tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
 
@@ -148,6 +152,10 @@ def file_validation():
 
 # 파일 유틸리티
 def make_backup_file():
+    if not os.path.isdir(f"{tdm.config.DATA_DIR}/data"):
+        os.mkdir(f"{tdm.config.DATA_DIR}/data")
+    if not os.path.isdir(f"{tdm.config.DATA_DIR}/data/backup"):
+        os.mkdir(f"{tdm.config.DATA_DIR}/data/backup")
     wb = open()
     wb.save(f"{tdm.config.DATA_DIR}/data/backup/{tdm.config.DATA_FILE_NAME}({datetime.today().strftime('%Y%m%d%H%M%S')}).xlsx")
 

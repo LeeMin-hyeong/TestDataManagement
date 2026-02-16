@@ -12,6 +12,7 @@ import UpdateStudentView from "./UpdateStudentView";
 import UpdateTeacherView from "./UpdateTeacherView";
 import WelcomeView from "./WelcomeView";
 import ManageStudentView from "./ManageStudentView";
+import EditMessageConfigView from "./EditMessageConfigView";
 
 const viewMap: Partial<Record<tdmActionKey, FC<ViewProps>>> = {
   "welcome": WelcomeView,
@@ -23,6 +24,7 @@ const viewMap: Partial<Record<tdmActionKey, FC<ViewProps>>> = {
   "save-individual-exam": SaveIndividualExamView,
   "save-retest": SaveRetestView,
   "update-class": UpdateClassView,
+  "edit-message-config": EditMessageConfigView,
   "update-students": UpdateStudentView,
   "update-teacher": UpdateTeacherView,
   "manage-student": ManageStudentView

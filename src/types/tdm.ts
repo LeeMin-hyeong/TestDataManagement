@@ -1,6 +1,7 @@
 export type tdmActionKey =
   | "welcome"
   | "update-class"
+  | "edit-message-config"
   | "rename-data-file"
   | "update-students"
   | "update-teacher"
