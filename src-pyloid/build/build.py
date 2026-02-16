@@ -1,6 +1,7 @@
 from pyloid_builder.pyinstaller import pyinstaller
 from pyloid_builder.optimize import optimize
 from pyloid.utils import get_platform
+from pathlib import Path
 
 
 main_script = './src-pyloid/main.py'
@@ -28,6 +29,14 @@ else:
 
 
 if __name__ == '__main__':
+	main_add_data = [
+		'--add-data=./src-pyloid/icons/:./src-pyloid/icons/',
+		'--add-data=./dist-front/:./dist-front/',
+		'--add-data=./LICENSE:./',
+	]
+	if Path('./license.json').exists():
+		main_add_data.append('--add-data=./license.json:./')
+
 	pyinstaller(
 		main_script,
 		[
@@ -39,8 +48,7 @@ if __name__ == '__main__':
 			'--onedir',
 			# '--onefile',
 			'--windowed',
-			'--add-data=./src-pyloid/icons/:./src-pyloid/icons/',
-			'--add-data=./dist-front/:./dist-front/',
+			*main_add_data,
 			f'--icon={icon}',
 		],
 	)
