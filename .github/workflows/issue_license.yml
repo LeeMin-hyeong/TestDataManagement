@@ -16,10 +16,6 @@ on:
         description: "Expires at (ISO8601, optional)"
         required: false
         type: string
-      issued_at:
-        description: "Issued at (ISO8601, optional)"
-        required: false
-        type: string
       product:
         description: "Product name"
         required: false
@@ -35,6 +31,7 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: "1"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -45,28 +42,41 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
+        shell: pwsh
         run: |
           python -m pip install --upgrade pip
           python -m pip install cryptography
 
-      - name: Write private key (from secret)
+      - name: Write private key (from secret PEM)
         shell: pwsh
         run: |
           $keyPath = "license-keys/tdm_private_key.pem"
           New-Item -ItemType Directory -Force -Path "license-keys" | Out-Null
-          $content = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.TDM_PRIVATE_KEY }}"))
-          Set-Content -Path $keyPath -Value $content -NoNewline -Encoding utf8
-      - name: Write public key (from secret)
+
+          $pem = "${{ secrets.TDM_PRIVATE_KEY }}"
+          if (-not $pem) { throw "TDM_PRIVATE_KEY secret is empty." }
+
+          $pem = $pem.Trim() -replace "`r`n", "`n"
+          Set-Content -Path $keyPath -Value $pem -NoNewline -Encoding ascii
+
+      - name: Write public key (from secret PEM)
         shell: pwsh
         run: |
           $keyPath = "license-keys/tdm_public_key.pem"
           New-Item -ItemType Directory -Force -Path "license-keys" | Out-Null
-          $content = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("${{ secrets.TDM_PUBLIC_KEY }}"))
-          Set-Content -Path $keyPath -Value $content -NoNewline -Encoding utf8
+
+          $pem = "${{ secrets.TDM_PUBLIC_KEY }}"
+          if (-not $pem) { throw "TDM_PUBLIC_KEY secret is empty." }
+
+          $pem = $pem.Trim() -replace "`r`n", "`n"
+          Set-Content -Path $keyPath -Value $pem -NoNewline -Encoding ascii
 
       - name: Issue license.json
         shell: pwsh
         run: |
+          # issued_at = workflow execution time (UTC, ISO8601)
+          $issuedAt = (Get-Date).ToUniversalTime().ToString("o")
+
           $args = @(
             "scripts/license_tools.py", "issue",
             "--private-key", "license-keys/tdm_private_key.pem",
@@ -74,13 +84,16 @@ jobs:
             "--name", "${{ inputs.name }}",
             "--license-id", "${{ inputs.license_id }}",
             "--product", "${{ inputs.product }}",
+            "--issued-at", $issuedAt,
             "--out", "license.json"
           )
+
           if ("${{ inputs.expires_at }}") { $args += @("--expires-at", "${{ inputs.expires_at }}") }
-          if ("${{ inputs.issued_at }}") { $args += @("--issued-at", "${{ inputs.issued_at }}") }
+
           python @args
 
-      - name: Cleanup private key
+      - name: Cleanup keys
+        if: always()
         shell: pwsh
         run: |
           Remove-Item -Force -ErrorAction SilentlyContinue "license-keys/tdm_private_key.pem"
