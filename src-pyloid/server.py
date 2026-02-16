@@ -534,7 +534,7 @@ async def get_startup_notice(ctx: RPCContext) -> Dict[str, Any]:
         raw: Dict[str, Any] = {
             "enabled": True,
             "source": "github_release",
-            "repo": "LeeMin-hyeong/Omikron",
+            "repo": "LeeMin-hyeong/TestDataManagement",
             "include_prerelease": False,
             "title_prefix": "업데이트 안내",
         }
@@ -568,7 +568,7 @@ async def get_startup_notice(ctx: RPCContext) -> Dict[str, Any]:
                 "noticeId": notice_id,
             }
 
-        repo = str(raw.get("repo", "LeeMin-hyeong/Omikron")).strip()
+        repo = str(raw.get("repo", "LeeMin-hyeong/TestDataManagement")).strip()
         include_prerelease = bool(raw.get("include_prerelease", False))
         if "/" not in repo:
             return {"ok": False, "error": "repo must be 'owner/repo' format."}
