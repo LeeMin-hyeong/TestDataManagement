@@ -30,7 +30,7 @@ import tdm.datafile
 import tdm.dataform
 import tdm.studentinfo
 import tdm.makeuptest
-from tdm.exception import NoMatchingSheetException, FileOpenException
+from tdm.exception import NoMatchingSheetException, FileOpenException, ExcelRequiredException, ChromeDriverVersionMismatchException
 
 
 ####################################### 상태 관리 메서드 #######################################
@@ -96,6 +96,8 @@ async def get_progress(ctx: RPCContext, job_id: str) -> Dict[str, Any]:
         "level": "info",
         "status": "unknown",
         "message": "",
+        "error": "",
+        "detail": "",
         "warnings": [],
         "ts": time.time(),
     }
@@ -204,8 +206,10 @@ def _update_class_job_process(job_id: str, q: multiprocessing.Queue) -> None:
         prog.step("반 정보 파일 최신화 중...")
         tdm.classinfo.update_class(prog)
         prog.done("반 업데이트가 완료되었습니다.")
+    except ExcelRequiredException as exc:
+        prog.error(str(exc))
     except Exception:
-        prog.error(f"예상치 못한 오류가 발생했습니다:\n {traceback.format_exc()}")
+        prog.error("예상치 못한 오류가 발생했습니다.", detail=traceback.format_exc())
     finally:
         tdm.classinfo.delete_temp()
 
@@ -249,14 +253,17 @@ def _send_exam_message_job_process(
 
         try:
             tdm.chrome.send_test_result_message(str(tmp_file), makeup_test_date, prog)
+        except ChromeDriverVersionMismatchException as e:
+            prog.error(str(e))
+            return
         except Exception as e:
             prog.error(f"메시지 작성 중 오류가 발생했습니다:\n {e}")
 
         prog.step("작업 완료")
 
         prog.done("메시지 작성이 완료되었습니다. 전송 전 내용을 확인하세요.")
-    except Exception as exc:
-        prog.error(f"예상치 못한 오류가 발생했습니다: {exc}")
+    except Exception:
+        prog.error("예상치 못한 오류가 발생했습니다.", detail=traceback.format_exc())
     finally:
         if tmp_file:
             _cleanup_temp(tmp_file)
@@ -303,6 +310,9 @@ def _save_exam_job_process(
             datafile_wb = tdm.datafile.save_test_data(str(tmp_file), prog)
             makeuptest_wb = tdm.makeuptest.save_makeup_test_list(str(tmp_file), makeup_test_date, prog)
             prog.step("재시험 명단 입력 완료")
+        except ExcelRequiredException as e:
+            prog.error(str(e))
+            return
         except NoMatchingSheetException as e:
             prog.error(f"파일에서 목표 시트를 찾을 수 없습니다:\n {e}")
             return
@@ -320,8 +330,8 @@ def _save_exam_job_process(
         prog.step("파일 저장 완료")
 
         prog.done("데이터 저장을 완료하였습니다.")
-    except Exception as exc:
-        prog.error(f"예상치 못한 오류가 발생했습니다:\n {traceback.format_exc()}")
+    except Exception:
+        prog.error("예상치 못한 오류가 발생했습니다.", detail=traceback.format_exc())
         return
     finally:
         tdm.datafile.delete_temp()

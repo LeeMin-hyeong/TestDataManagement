@@ -324,7 +324,11 @@ export default function UpdateClassView({ meta }: ViewProps) {
       lastStatusRef.current = "error";
       setProgressOpen(false);
       void dialog
-        .error({ title: "에러", message: prog.message || "반 업데이트 중 오류가 발생했습니다." })
+        .error({
+          title: "반 업데이트 중 오류가 발생했습니다",
+          message: prog.error || prog.message || "반 업데이트 중 오류가 발생했습니다.",
+          detail: prog.detail 
+        })
         .then(() => {
           setJobId(undefined);
           loadData();
@@ -342,7 +346,7 @@ export default function UpdateClassView({ meta }: ViewProps) {
           loadData();
         });
     }
-  }, [jobId, prog.status, prog.message, dialog]);
+  }, [jobId, prog.status, prog.message, prog.error, prog.detail, dialog]);
 
   // 버튼 → 1단계 다이얼로그 오픈 & 임시파일 생성
   const openStep1File = async (path?: string) => {

@@ -1,6 +1,7 @@
 ﻿from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import SessionNotCreatedException, WebDriverException
 from win32process import CREATE_NO_WINDOW # only works in Windows
 
 import requests
@@ -15,6 +16,7 @@ import tdm.config
 from tdm.defs import Chrome, DataForm
 from tdm.util import calculate_makeup_test_schedule, date_to_kor_date
 from tdm.progress import Progress
+from tdm.exception import ChromeDriverVersionMismatchException
 
 def _fetch_aisosik_soup() -> BeautifulSoup:
     """
@@ -188,6 +190,22 @@ def _cache_table_inputs(driver:webdriver.Chrome, class_index: int) -> dict[str, 
 
     return name_to_inputs
 
+def _create_chrome_driver(service: Service, options: webdriver.ChromeOptions) -> webdriver.Chrome:
+    try:
+        return webdriver.Chrome(service=service, options=options)
+    except (SessionNotCreatedException, WebDriverException) as e:
+        msg = str(e).lower()
+        version_mismatch_patterns = (
+            "this version of chromedriver only supports chrome version",
+            "current browser version is",
+            "only supports chrome version",
+        )
+        if any(p in msg for p in version_mismatch_patterns):
+            raise ChromeDriverVersionMismatchException(
+                "셀레니움 기능을 실행할 수 없습니다. 설치된 Chrome 버전과 ChromeDriver(셀레니움)가 호환되지 않습니다. 프로그램을 최신 버전으로 업데이트하거나 Chrome 버전을 확인해 주세요."
+            ) from e
+        raise
+
 def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress) -> bool:
     """
     기록 양식의 데이터를 추출하여 아이소식 스크립트 작성
@@ -213,7 +231,7 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         student_wb = tdm.studentinfo.open()
         student_ws = tdm.studentinfo.open_worksheet(student_wb)
 
-        driver = webdriver.Chrome(service=service, options=options)
+        driver = _create_chrome_driver(service=service, options=options)
         
         # 아이소식 접속
         driver.get(tdm.config.URL)
@@ -382,6 +400,8 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
 
         driver.switch_to.window(driver.window_handles[Chrome.DAILYTEST_RESULT_TAB])
         return True
+    except ChromeDriverVersionMismatchException:
+        raise
     except Exception as e:
         raise Exception(f"메시지 작성 중 오류가 발생했습니다: {e}")
 
@@ -419,9 +439,8 @@ def send_individual_test_message(student_name:str, class_name:int, test_name:int
 
     student_wb = None
     student_ws = None
-    driver = webdriver.Chrome(service=service, options=options)
-
     try:
+        driver = _create_chrome_driver(service=service, options=options)
         # 아이소식 접속
         driver.get(tdm.config.URL)
         driver.execute_script("document.title = '시험 결과 전송'")

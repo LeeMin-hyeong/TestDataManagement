@@ -146,8 +146,9 @@ export default function SendExamMessageView({ meta, onAction }: ViewProps) {
       lastStatusRef.current = "error"
       void dialog
         .error({
-          title: "오류",
-          message: prog.message || "메시지 작성 중 오류가 발생했습니다.",
+          title: "메시지 작성 중 오류가 발생했습니다",
+          message: prog.error || prog.message || "메시지 작성 중 오류가 발생했습니다.",
+          detail: prog.detail,
         })
         .then(() => {
           setJobId(undefined)
@@ -165,7 +166,7 @@ export default function SendExamMessageView({ meta, onAction }: ViewProps) {
           setFile(null)
         })
     }
-  }, [jobId, prog.status, prog.message, dialog])
+  }, [jobId, prog.status, prog.message, prog.error, prog.detail, dialog])
 
   useEffect(() => {
     if (running) setDragging(false)

@@ -13,6 +13,8 @@ export type ProgressPayload = {
   level: ProgressLevel;
   status: ProgressStatus;
   message: string;
+  error?: string;
+  detail?: string;
   warnings: string[];
   ts: number;
 };
@@ -25,6 +27,8 @@ export const initialProgress: ProgressPayload = {
   level: "info",
   status: "unknown",
   message: "",
+  error: "",
+  detail: "",
   warnings: [],
   ts: 0,
 };
@@ -99,6 +103,8 @@ function isSameProgress(a: ProgressPayload, b: ProgressPayload) {
     a.level === b.level &&
     a.status === b.status &&
     a.message === b.message &&
+    (a.error ?? "") === (b.error ?? "") &&
+    (a.detail ?? "") === (b.detail ?? "") &&
     a.ts === b.ts &&
     a.warnings.length === b.warnings.length &&
     aLastWarn === bLastWarn
@@ -179,6 +185,8 @@ export function useProgressPoller(jobId?: string, interval = 500) {
           level: (p?.level ?? "info") as ProgressLevel,
           status,
           message: String(p?.message ?? ""),
+          error: p?.error == null ? "" : String(p.error),
+          detail: p?.detail == null ? "" : String(p.detail),
           warnings,
           ts: Number(p?.ts ?? Date.now()),
         } as ProgressPayload;
@@ -202,6 +210,8 @@ export function useProgressPoller(jobId?: string, interval = 500) {
         setProg((prev) => ({
           ...prev,
           message: prev.message || "진행 상태 확인 중...",
+          error: prev.error || "",
+          detail: prev.detail || "",
           ts: now,
         }));
         schedule(delayRef.current);
