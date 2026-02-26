@@ -16,7 +16,7 @@ import tdm.dataform
 import tdm.studentinfo
 
 from tdm.defs import DataFile, DataForm
-from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException
+from tdm.exception import NoMatchingSheetException, FileOpenException, ReopenFileException, ExcelRequiredException
 from tdm.util import copy_cell, class_average_color, student_average_color, test_score_color
 from tdm.progress import Progress
 from tdm.style import BORDER_BOTTOM_MEDIUM_000, BORDER_BOTTOM_THIN_9090, BORDER_TOP_THIN_9090_BOTTOM_MEDIUM_000, BORDER_TOP_MEDIUM_000
@@ -29,6 +29,30 @@ class NoReservedColumnError(Exception):
     예약된 열이 없을 경우
     """
     pass
+
+
+def _recalculate_with_excel(file_path: str):
+    """Use Excel COM to force formula recalculation / conditional formatting evaluation."""
+    pythoncom.CoInitialize()
+    excel = None
+    try:
+        try:
+            excel = win32com.client.Dispatch("Excel.Application")
+        except pythoncom.com_error as e:
+            raise ExcelRequiredException(
+                "이 기능을 사용하려면 Microsoft Excel 이 설치되어 있어야 합니다."
+            ) from e
+
+        wb_com = excel.Workbooks.Open(os.path.abspath(file_path))
+        wb_com.Save()
+        wb_com.Close()
+    finally:
+        try:
+            if excel is not None:
+                excel.Quit()
+        except:
+            pass
+        pythoncom.CoUninitialize()
 
 # 파일 기본 작업
 def make_file():
@@ -416,21 +440,7 @@ def save_test_data(filepath:str, prog: Progress):
     prog.step("데이터 저장 완료")
 
     # 조건부 서식 수식 로딩
-    pythoncom.CoInitialize()
-    excel = None
-    try:
-        excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
-        wb_com = excel.Workbooks.Open(abs_path)
-        wb_com.Save()
-        wb_com.Close()
-    finally:
-        try:
-            if excel is not None:
-                excel.Quit()
-        except:
-            pass
-        pythoncom.CoUninitialize()
+    _recalculate_with_excel(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
 
     wb           = open_temp()
     data_only_wb = open_temp(data_only=True)
@@ -496,21 +506,7 @@ def save_individual_test_data(target_row:int, target_col:int, test_score:int|flo
 
     save_to_temp(wb)
 
-    pythoncom.CoInitialize()
-    excel = None
-    try:
-        excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
-        wb_com = excel.Workbooks.Open(abs_path)
-        wb_com.Save()
-        wb_com.Close()
-    finally:
-        try:
-            if excel is not None:
-                excel.Quit()
-        except:
-            pass
-        pythoncom.CoUninitialize()
+    _recalculate_with_excel(f"{tdm.config.DATA_DIR}/data/{DataFile.TEMP_FILE_NAME}.xlsx")
 
     wb           = open_temp()
     data_only_wb = open_temp(True)
@@ -547,21 +543,7 @@ def save_individual_test_data(target_row:int, target_col:int, test_score:int|flo
 def conditional_formatting():
     file_validation()
 
-    pythoncom.CoInitialize()
-    excel = None
-    try:
-        excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
-        wb_com = excel.Workbooks.Open(abs_path)
-        wb_com.Save()
-        wb_com.Close()
-    finally:
-        try:
-            if excel is not None:
-                excel.Quit()
-        except:
-            pass
-        pythoncom.CoUninitialize()
+    _recalculate_with_excel(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
 
     warnings = []
 
@@ -666,21 +648,7 @@ def update_class(prog: Progress | None = None):
     new_class_names = set(tdm.classinfo.get_new_class_names())
 
     # 조건부 서식 수식 로딩
-    pythoncom.CoInitialize()
-    excel = None
-    try:
-        excel = win32com.client.Dispatch("Excel.Application")
-        abs_path = os.path.abspath(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
-        wb_com = excel.Workbooks.Open(abs_path)
-        wb_com.Save()
-        wb_com.Close()
-    finally:
-        try:
-            if excel is not None:
-                excel.Quit()
-        except:
-            pass
-        pythoncom.CoUninitialize()
+    _recalculate_with_excel(f"{tdm.config.DATA_DIR}/data/{tdm.config.DATA_FILE_NAME}.xlsx")
 
     # 지난 데이터 파일이 없으면 새로 생성
     if not os.path.isfile(f"{tdm.config.DATA_DIR}/data/{DataFile.PRE_DATA_FILE_NAME}.xlsx"):

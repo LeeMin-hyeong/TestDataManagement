@@ -172,8 +172,9 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
       lastStatusRef.current = "error"
       void dialog
         .error({
-          title: "오류",
-          message: prog.message || "데이터 저장 중 오류가 발생했습니다.",
+          title: "데이터 저장 중 오류가 발생했습니다",
+          message: prog.error || prog.message || "데이터 저장 중 오류가 발생했습니다.",
+          detail: prog.detail,
         })
         .then(() => {
           setJobId(undefined)
@@ -193,7 +194,7 @@ export default function SaveExamView({ meta, onAction }: ViewProps) {
           setPrecheckStatus("idle")
         })
     }
-  }, [jobId, prog.status, prog.message, dialog])
+  }, [jobId, prog.status, prog.message, prog.error, prog.detail, dialog])
 
 return (
     <div className="h-full min-h-0 min-w-0">

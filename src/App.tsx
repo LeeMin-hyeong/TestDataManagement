@@ -135,6 +135,10 @@ export default function TdmPanel({
   height = 830,
   sidebarPercent = 10,
 }: Props) {
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window !== "undefined" ? window.innerWidth : width,
+    height: typeof window !== "undefined" ? window.innerHeight : height,
+  }));
   const dialog = useAppDialog();
   const [selected, setSelected] = useState<tdmActionKey>("welcome");
   const [mountedKeys, setMountedKeys] = useState<tdmActionKey[]>(["welcome"]);
@@ -215,8 +219,10 @@ export default function TdmPanel({
         return;
       }
 
-      setNeedsInitialConfig(!res.ready);
-      setNeedsTermsAgreement(Boolean(res.ready && !res.termsAccepted));
+      // If config.json exists, skip initial setup even when some values are invalid
+      // (e.g. dataDir). Those cases are handled by the separate reconfiguration flow.
+      setNeedsInitialConfig(!res.exists);
+      setNeedsTermsAgreement(Boolean(res.exists && !res.termsAccepted));
       setSetupConfig({
         url: res?.config?.url ?? "",
         dataDir: res?.config?.dataDir ?? "",
@@ -226,7 +232,7 @@ export default function TdmPanel({
         makeupTestDate: res?.config?.makeupTestDate ?? "",
       });
 
-      if (res.ready) {
+      if (res.exists) {
         await fetchState();
         if (res.termsAccepted) {
           await showStartupNotice();
@@ -283,6 +289,15 @@ export default function TdmPanel({
   }, []);
 
   useEffect(() => {
+    const onResize = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
     if (!bootChecked || missing || needsInitialConfig || needsTermsAgreement) return;
     pollRef.current = window.setInterval(() => {
       void fetchState();
@@ -304,8 +319,12 @@ export default function TdmPanel({
     return <div className="h-screen w-screen bg-gradient-to-b from-point/10 to-transparent" />;
   }
 
+  const panelScale = Math.min(viewport.width / width, viewport.height / height, 1);
+  const scaledWidth = Math.max(1, Math.round(width * panelScale));
+  const scaledHeight = Math.max(1, Math.round(height * panelScale));
+
   return (
-    <div className="h-screen overflow-hidden bg-gradient-to-b from-point/10 to-transparent">
+    <div className="h-screen w-screen overflow-hidden bg-gradient-to-b from-point/10 to-transparent">
       <TermsAgreementDialog
         open={!needsInitialConfig && needsTermsAgreement}
         onAccepted={handleTermsAccepted}
@@ -318,10 +337,17 @@ export default function TdmPanel({
         onClose={closeNoticePopup}
       />
 
-      <div
-        className="mx-auto flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-xl"
-        style={{ width, height }}
-      >
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="relative" style={{ width: scaledWidth, height: scaledHeight }}>
+          <div
+            className="flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-xl"
+            style={{
+              width,
+              height,
+              transform: `scale(${panelScale})`,
+              transformOrigin: "top left",
+            }}
+          >
         <div className="flex h-16 items-center justify-between border-b border-border/80 px-6">
           <div className="flex items-center gap-3">
             <h1 className="py-5 text-lg font-semibold tracking-tight text-foreground">
@@ -426,6 +452,8 @@ export default function TdmPanel({
             </section>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

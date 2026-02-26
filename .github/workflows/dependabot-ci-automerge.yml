@@ -6,8 +6,13 @@ on:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
+
+concurrency:
+  group: dependabot-ci-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -35,6 +40,27 @@ jobs:
             exit 1
           fi
 
+      - name: Wait for selenium rollup workflow to finish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          echo "Checking rollup workflow status for branch: $BRANCH"
+          for i in {1..24}; do
+            statuses="$(gh api "/repos/$REPO/actions/workflows/dependabot-selenium-rollup.yml/runs?branch=$BRANCH&event=pull_request_target&per_page=10" --jq '.workflow_runs[].status' || true)"
+
+            if echo "$statuses" | grep -Eq 'queued|in_progress'; then
+              echo "Rollup workflow still running (attempt $i/24). Waiting 5s..."
+              sleep 5
+              continue
+            fi
+
+            echo "No queued/in-progress rollup workflow found."
+            break
+          done
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -44,13 +70,10 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install deps (JS)
         run: npm ci
-
-      - name: Sync Python deps (within constraints)
-        run: uv sync --upgrade
 
       - name: Project setup
         shell: pwsh

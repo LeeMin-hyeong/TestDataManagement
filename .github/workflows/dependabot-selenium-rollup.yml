@@ -1,0 +1,77 @@
+name: Dependabot Selenium PR - Refresh npm/uv
+
+on:
+  pull_request_target:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: dependabot-selenium-rollup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh-lockfiles:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout PR branch
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          persist-credentials: true
+
+      - name: Set up Node
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Python
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        uses: astral-sh/setup-uv@v6
+
+      - name: Refresh npm lockfile (all packages within ranges)
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        shell: bash
+        run: |
+          npm update --package-lock-only
+
+      - name: Refresh uv lockfile (all packages)
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        shell: bash
+        run: |
+          uv lock --upgrade
+
+      - name: Commit and push if changed
+        if: contains(steps.meta.outputs.dependency-names, 'selenium')
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No additional npm/uv updates detected."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json uv.lock pyproject.toml package.json || true
+          git commit -m "chore(deps): refresh npm and uv after selenium bump"
+          git push
