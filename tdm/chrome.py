@@ -1,4 +1,6 @@
-﻿from selenium import webdriver
+from __future__ import annotations
+
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import SessionNotCreatedException, WebDriverException
