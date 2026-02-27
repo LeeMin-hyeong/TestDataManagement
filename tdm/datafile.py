@@ -119,7 +119,10 @@ def make_file():
             ws.cell(WRITE_LOCATION, DataFile.CLASS_NAME_COLUMN).value    = class_name
             ws.cell(WRITE_LOCATION, DataFile.TEACHER_NAME_COLUMN).value  = teacher_name
             ws.cell(WRITE_LOCATION, DataFile.STUDENT_NAME_COLUMN).value  = "시험 평균"
-            ws[f"{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{WRITE_LOCATION}"] = ArrayFormula(f"{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{WRITE_LOCATION}", f"=ROUND(AVERAGE(IFERROR({gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_start}:{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_end}, \"\")), 0)")
+            ws[f"{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{WRITE_LOCATION}"] = ArrayFormula(
+                f"{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{WRITE_LOCATION}",
+                f"=ROUND(SUM(IFERROR({gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_start}:{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_end},0))/COUNT({gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_start}:{gcl(DataFile.AVERAGE_SCORE_COLUMN)}{class_end}),0)",
+            )
             ws.cell(WRITE_LOCATION, DataFile.AVERAGE_SCORE_COLUMN).font = FONT_BOLD
 
             for col in range(1, DataFile.DATA_COLUMN):
@@ -953,7 +956,10 @@ def rescoping_formula(wb:xl.Workbook=None):
             CLASS_START = row+2
         elif ws.cell(row, STUDENT_NAME_COLUMN).value == "시험 평균":
             CLASS_END = row-1
-            ws[f"{gcl(AVERAGE_SCORE_COLUMN)}{row}"] = ArrayFormula(f"{gcl(AVERAGE_SCORE_COLUMN)}{row}", f"=ROUND(AVERAGE(IFERROR({gcl(AVERAGE_SCORE_COLUMN)}{CLASS_START}:{gcl(AVERAGE_SCORE_COLUMN)}{CLASS_END}, \"\")), 0)")
+            ws[f"{gcl(AVERAGE_SCORE_COLUMN)}{row}"] = ArrayFormula(
+                f"{gcl(AVERAGE_SCORE_COLUMN)}{row}",
+                f"=ROUND(SUM(IFERROR({gcl(AVERAGE_SCORE_COLUMN)}{CLASS_START}:{gcl(AVERAGE_SCORE_COLUMN)}{CLASS_END},0))/COUNT({gcl(AVERAGE_SCORE_COLUMN)}{CLASS_START}:{gcl(AVERAGE_SCORE_COLUMN)}{CLASS_END}),0)",
+            )
             if CLASS_START >= CLASS_END:
                 continue
             for col in range(AVERAGE_SCORE_COLUMN+1, ws.max_column+1):
