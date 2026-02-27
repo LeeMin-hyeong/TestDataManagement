@@ -7,7 +7,7 @@ from pathlib import Path
 main_script = './src-pyloid/main.py'
 name = 'main'
 updater_script = './src-pyloid/updater.py'
-entry_name = 'TDM'
+entry_name = 'tdm'
 dist_path = './dist'
 work_path = './build'
 
@@ -48,6 +48,7 @@ if __name__ == '__main__':
 			'--onedir',
 			# '--onefile',
 			'--windowed',
+			'--hidden-import=selenium.webdriver.chrome.webdriver',
 			*main_add_data,
 			f'--icon={icon}',
 		],

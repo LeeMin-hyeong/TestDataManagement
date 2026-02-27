@@ -1,6 +1,10 @@
-﻿from selenium import webdriver
+﻿from typing import Any, TypeAlias
+
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.webdriver import WebDriver as ChromeWebDriver
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import SessionNotCreatedException, WebDriverException
 from win32process import CREATE_NO_WINDOW # only works in Windows
 
@@ -17,6 +21,8 @@ from tdm.defs import Chrome, DataForm
 from tdm.util import calculate_makeup_test_schedule, date_to_kor_date
 from tdm.progress import Progress
 from tdm.exception import ChromeDriverVersionMismatchException
+
+InputTriple: TypeAlias = tuple[WebElement, WebElement, WebElement]
 
 def _fetch_aisosik_soup() -> BeautifulSoup:
     """
@@ -151,10 +157,10 @@ def check_student_exists(student_name: str, target_class_name: str) -> bool:
     return False
 
 # 크롬 작업
-def _set_input(driver, input_el, value):
+def _set_input(driver: ChromeWebDriver, input_el: WebElement, value: Any) -> None:
     driver.execute_script("arguments[0].value = arguments[1]", input_el, str(value))
 
-def _set_value_with_events(driver, el, value):
+def _set_value_with_events(driver: ChromeWebDriver, el: WebElement, value: Any) -> None:
     driver.execute_script("""
         const el = arguments[0];
         const val = arguments[1];
@@ -166,9 +172,9 @@ def _set_value_with_events(driver, el, value):
         // 폼 검증/계산 트리거가 change에 걸린 경우도 많음
         el.dispatchEvent(new Event('change', { bubbles: true }));
         el.blur();
-    """, el, value)
+    """, el, str(value))
 
-def _cache_table_inputs(driver:webdriver.Chrome, class_index: int) -> dict[str, tuple]:
+def _cache_table_inputs(driver: ChromeWebDriver, class_index: int) -> dict[str, InputTriple]:
     """
     table_{class_index}에서
     학생이름 -> (시험명 input, 점수 input, 평균 input) 캐싱
@@ -176,7 +182,7 @@ def _cache_table_inputs(driver:webdriver.Chrome, class_index: int) -> dict[str, 
     table = driver.find_element(By.ID, f"table_{class_index}")
     rows = table.find_elements(By.CLASS_NAME, "style12")
 
-    name_to_inputs = {}
+    name_to_inputs: dict[str, InputTriple] = {}
     for row in rows:
         name = row.find_element(By.CLASS_NAME, "style9").text.strip()
         if not name:
@@ -190,9 +196,9 @@ def _cache_table_inputs(driver:webdriver.Chrome, class_index: int) -> dict[str, 
 
     return name_to_inputs
 
-def _create_chrome_driver(service: Service, options: webdriver.ChromeOptions) -> webdriver.Chrome:
+def _create_chrome_driver(service: Service, options: ChromeOptions) -> ChromeWebDriver:
     try:
-        return webdriver.Chrome(service=service, options=options)
+        return ChromeWebDriver(service=service, options=options)
     except (SessionNotCreatedException, WebDriverException) as e:
         msg = str(e).lower()
         version_mismatch_patterns = (
@@ -206,7 +212,7 @@ def _create_chrome_driver(service: Service, options: webdriver.ChromeOptions) ->
             ) from e
         raise
 
-def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress) -> bool:
+def send_test_result_message(filepath: str, makeup_test_date: dict[str, Any], prog: Progress) -> bool:
     """
     기록 양식의 데이터를 추출하여 아이소식 스크립트 작성
     """
@@ -215,7 +221,7 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
     try:
         service = Service()
         service.creation_flags = CREATE_NO_WINDOW
-        options = webdriver.ChromeOptions()
+        options = ChromeOptions()
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-extensions")
         options.add_argument("--blink-settings=imagesEnabled=false")
@@ -266,14 +272,14 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         # table_index_dict = {table_name.text.strip() : i for i, table_name in enumerate(table_names)}
 
         # 탭별 캐시: class_index -> (student_name -> inputs)
-        daily_cache: dict[int, dict[str, tuple]] = {}
-        nosched_cache: dict[int, dict[str, tuple]] = {}
-        sched_cache: dict[int, dict[str, tuple]] = {}
+        daily_cache: dict[int, dict[str, InputTriple]] = {}
+        nosched_cache: dict[int, dict[str, InputTriple]] = {}
+        sched_cache: dict[int, dict[str, InputTriple]] = {}
 
         # 탭별 작업 큐
-        daily_ops = []
-        nosched_ops = []
-        sched_ops = []
+        daily_ops: list[tuple[int, str, str | None, int | float, str | None]] = []
+        nosched_ops: list[tuple[int, str, str | None]] = []
+        sched_ops: list[tuple[int, str, str | None, str]] = []
 
         # 루프에서 매 행마다 DOM 조작하지 말고 "작업만 수집"
         class_index = None
@@ -284,10 +290,15 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         for row in range(2, form_ws.max_row + 1):
             if form_ws.cell(row, DataForm.CLASS_NAME_COLUMN).value is not None:
                 class_name = str(form_ws.cell(row, DataForm.CLASS_NAME_COLUMN).value)
-                daily_test_name    = str(form_ws.cell(row, DataForm.DAILYTEST_NAME_COLUMN).value)
-                mock_test_name     = str(form_ws.cell(row, DataForm.MOCKTEST_NAME_COLUMN).value)
-                daily_test_average = str(form_ws.cell(row, DataForm.DAILYTEST_AVERAGE_COLUMN).value)
-                mock_test_average  = str(form_ws.cell(row, DataForm.MOCKTEST_AVERAGE_COLUMN).value)
+                daily_name_value = form_ws.cell(row, DataForm.DAILYTEST_NAME_COLUMN).value
+                mock_name_value = form_ws.cell(row, DataForm.MOCKTEST_NAME_COLUMN).value
+                daily_avg_value = form_ws.cell(row, DataForm.DAILYTEST_AVERAGE_COLUMN).value
+                mock_avg_value = form_ws.cell(row, DataForm.MOCKTEST_AVERAGE_COLUMN).value
+
+                daily_test_name = str(daily_name_value) if daily_name_value is not None else None
+                mock_test_name = str(mock_name_value) if mock_name_value is not None else None
+                daily_test_average = str(daily_avg_value) if daily_avg_value is not None else None
+                mock_test_average = str(mock_avg_value) if mock_avg_value is not None else None
 
                 if daily_test_name is None and mock_test_name is None:
                     continue
@@ -297,7 +308,12 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
                     prog.warning(f"아이소식에 {class_name} 반이 존재하지 않습니다.")
                     continue
 
-            student_name     = form_ws.cell(row, DataForm.STUDENT_NAME_COLUMN).value
+            student_name_raw = form_ws.cell(row, DataForm.STUDENT_NAME_COLUMN).value
+            if student_name_raw is None:
+                continue
+            student_name = str(student_name_raw).strip()
+            if not student_name:
+                continue
             daily_test_score = form_ws.cell(row, DataForm.DAILYTEST_SCORE_COLUMN).value
             mock_test_score  = form_ws.cell(row, DataForm.MOCKTEST_SCORE_COLUMN).value
 
@@ -417,14 +433,23 @@ def send_test_result_message(filepath:str, makeup_test_date:dict, prog:Progress)
         except Exception:
             pass
 
-def send_individual_test_message(student_name:str, class_name:int, test_name:int, test_score:int, test_average:int, makeup_test_check:bool, makeup_test_date:dict, prog:Progress) -> bool:
+def send_individual_test_message(
+    student_name: str,
+    class_name: str,
+    test_name: str,
+    test_score: int | float,
+    test_average: int | float | str,
+    makeup_test_check: bool,
+    makeup_test_date: dict[str, Any],
+    prog: Progress,
+) -> bool:
     """
     개별 시험에 대한 결과 메시지 전송
     """
 
     service = Service()
     service.creation_flags = CREATE_NO_WINDOW
-    options = webdriver.ChromeOptions()
+    options = ChromeOptions()
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-extensions")
     options.add_argument("--blink-settings=imagesEnabled=false")
