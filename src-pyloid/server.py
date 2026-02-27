@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional
 from urllib.error import URLError, HTTPError
 from urllib.request import Request, urlopen
 import webbrowser
+from bs4 import BeautifulSoup
 
 from pyloid.rpc import PyloidRPC, RPCContext
 
@@ -189,6 +190,31 @@ def _cleanup_temp(path: Path) -> None:
         shutil.rmtree(root, ignore_errors=True)
     except Exception:
         pass
+
+
+def _validate_script_page_url(url: str) -> Optional[str]:
+    """Validate that any <center> text equals 'Script'."""
+    try:
+        req = Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
+            },
+        )
+        with urlopen(req, timeout=10) as resp:
+            raw = resp.read()
+
+        html = raw.decode("utf-8", errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+        marker_ok = any(c.get_text(strip=True) == "Script" for c in soup.select("center"))
+        if not marker_ok:
+            return "URL 페이지가 스크립트 페이지가 아닙니다. /html/body/div[1]/h1/center 값이 'Script'여야 합니다."
+        return None
+    except (HTTPError, URLError, TimeoutError):
+        return "URL에 접속할 수 없습니다. 주소와 네트워크 상태를 확인해 주세요."
+    except Exception:
+        return "URL 검증 중 오류가 발생했습니다."
 
 
 ####################################### thread 작업 #######################################
@@ -492,6 +518,21 @@ async def update_message_templates(
             makeup_test_date_message=makeup_test_date_message,
         )
         return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
+
+
+@server.method()
+async def validate_script_url(ctx: RPCContext, url: str) -> Dict[str, Any]:
+    try:
+        url = (url or "").strip()
+        if not url:
+            return {"ok": False, "error": "아이소식 URL이 작성되지 않았습니다."}
+        if not url.startswith(("http://", "https://")):
+            return {"ok": False, "error": "URL이 유효하지 않습니다."}
+
+        warning = _validate_script_page_url(url) is not None
+        return {"ok": True, "warning": warning}
     except Exception as e:
         return {"ok": False, "error": str(e), "detail": traceback.format_exc()}
 

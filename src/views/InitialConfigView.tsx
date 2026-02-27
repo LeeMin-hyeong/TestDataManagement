@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FolderOpen, HelpCircle } from "lucide-react";
+import { useAppDialog } from "@/components/app-dialog/AppDialogProvider";
 
 type InitialConfig = {
   url: string;
@@ -25,7 +26,7 @@ const STEPS: Array<{ key: keyof InitialConfig; title: string; description: strin
   {
     key: "url",
     title: "학원 아이소식 스크립트 URL",
-    description: "아이소식 스크립 주소 복사: 아이소식 메뉴 > 스크립트 버튼 우클릭 > 링크 주소 복사",
+    description: "아이소식 스크립트 주소 복사 방법: 아이소식 메뉴 > 스크립트 버튼 우클릭 > 링크 주소 복사",
   },
   {
     key: "dataDir",
@@ -55,6 +56,7 @@ const STEPS: Array<{ key: keyof InitialConfig; title: string; description: strin
 ];
 
 export default function InitialConfigView({ initial, onComplete }: Props) {
+  const dialog = useAppDialog();
   const HELP_URL = "https://tdm-db.notion.site/instruction?source=copy_link";
 
   const initialState = useMemo<InitialConfig>(
@@ -110,6 +112,19 @@ export default function InitialConfigView({ initial, onComplete }: Props) {
 
   const save = async () => {
     if (!validateCurrentStep()) return;
+
+    const validateRes = await rpc.call("validate_script_url", { url: form.url });
+    if (!validateRes?.ok) {
+      setError(validateRes?.error ?? "URL을 검증하지 못했습니다.");
+      return;
+    }
+    if (validateRes?.warning) {
+      const proceed = await dialog.warning({
+        title: "경고",
+        message: "url이 정확하지 않은 것 같습니다. 계속 진행하시겠습니까?",
+      });
+      if (!proceed) return;
+    }
 
     setSaving(true);
     setError("");

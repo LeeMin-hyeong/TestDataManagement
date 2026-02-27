@@ -1,12 +1,14 @@
-// src/views/PrereqSetupView.tsx
-import { useState } from "react";
+﻿// src/views/PrereqSetupView.tsx
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { FileSpreadsheet, ChevronsRight, FolderOpen, FolderSync, } from "lucide-react";
+import { FileSpreadsheet, ChevronsRight, FolderOpen, FolderSync } from "lucide-react";
 import { rpc } from "pyloid-js";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppDialog } from "@/components/app-dialog/AppDialogProvider";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 type State = {
   has_class: boolean;
@@ -29,12 +31,112 @@ export default function PrereqSetupView({
   const dialog = useAppDialog();
   const canInstallDataAndStudent = state.has_class;
 
-  // 각 작업 실행 중 상태
   const [runClass, setRunClass] = useState(false);
   const [runData, setRunData] = useState(false);
   const [runStudent, setRunStudent] = useState(false);
+  const [url, setUrl] = useState("");
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [loadingUrl, setLoadingUrl] = useState(true);
 
-  // 서버 호출 핸들러
+  const loadConfigUrl = async () => {
+    setLoadingUrl(true);
+    try {
+      const res = await rpc.call("get_config_status", {});
+      if (!res?.ok) {
+        await dialog.error({
+          title: "설정 로드 실패",
+          message: res?.error || "설정을 불러오지 못했습니다.",
+        });
+        return;
+      }
+      setUrl(res?.config?.url ?? "");
+    } catch (e: any) {
+      await dialog.error({ title: "에러", message: `${e}` });
+    } finally {
+      setLoadingUrl(false);
+    }
+  };
+
+  const saveConfigUrl = async () => {
+    const nextUrl = url.trim();
+    if (!nextUrl) {
+      await dialog.error({ title: "입력 오류", message: "URL을 입력해 주세요." });
+      return;
+    }
+
+    const validateRes = await rpc.call("validate_script_url", { url: nextUrl });
+    if (!validateRes?.ok) {
+      await dialog.error({ title: "URL 검증 실패", message: validateRes?.error || "URL을 검증하지 못했습니다." });
+      return;
+    }
+    if (validateRes?.warning) {
+      const proceed = await dialog.warning({
+        title: "URL 경고",
+        message: "url이 정확하지 않은 것 같습니다. 계속 진행하시겠습니까?",
+      });
+      if (!proceed) return;
+    }
+
+    setSavingUrl(true);
+    try {
+      const cfg = await rpc.call("get_config_status", {});
+      if (!cfg?.ok) {
+        await dialog.error({
+          title: "설정 로드 실패",
+          message: cfg?.error || "현재 설정을 불러오지 못했습니다.",
+        });
+        return;
+      }
+
+      const res = await rpc.call("update_message_templates", {
+        url: nextUrl,
+        daily_test_message: cfg?.config?.dailyTest ?? "",
+        makeup_test_message: cfg?.config?.makeupTest ?? "",
+        makeup_test_date_message: cfg?.config?.makeupTestDate ?? "",
+      });
+
+      if (!res?.ok) {
+        await dialog.error({
+          title: "URL 저장 실패",
+          message: res?.error || "URL을 저장하지 못했습니다.",
+          detail: res?.detail,
+        });
+        return;
+      }
+
+      await dialog.confirm({ title: "성공", message: "아이소식 URL을 업데이트했습니다." });
+      await loadConfigUrl();
+    } catch (e: any) {
+      await dialog.error({ title: "에러", message: `${e}` });
+    } finally {
+      setSavingUrl(false);
+    }
+  };
+
+  const openConfigUrl = async () => {
+    const target = url.trim();
+    if (!target) {
+      await dialog.error({ title: "입력 오류", message: "URL을 입력해 주세요." });
+      return;
+    }
+    try {
+      const res = await rpc.call("open_url", { url: target });
+      if (!res?.ok) {
+        await dialog.error({
+          title: "URL 열기 실패",
+          message: res?.error || "URL을 열지 못했습니다.",
+          detail: res?.detail,
+        });
+      }
+    } catch (e: any) {
+      await dialog.error({ title: "에러", message: `${e}` });
+    }
+  };
+
+  useEffect(() => {
+    void loadConfigUrl();
+  }, []);
+
   const installClass = async () => {
     if (runClass) return;
     try {
@@ -43,10 +145,10 @@ export default function PrereqSetupView({
       if (res?.ok) {
         onRefresh();
       } else {
-        await dialog.error({title: "반 정보 파일 생성 실패", message: res?.error, detail: res?.detail});
+        await dialog.error({ title: "반 정보 파일 생성 실패", message: res?.error, detail: res?.detail });
       }
     } catch (e: any) {
-      await dialog.error({title: "에러", message: `${e}`})
+      await dialog.error({ title: "에러", message: `${e}` });
     } finally {
       setRunClass(false);
     }
@@ -60,10 +162,10 @@ export default function PrereqSetupView({
       if (res?.ok) {
         onRefresh();
       } else {
-        await dialog.error({title: "데이터 파일 생성 실패", message: res?.error, detail: res?.detail});
+        await dialog.error({ title: "데이터 파일 생성 실패", message: res?.error, detail: res?.detail });
       }
     } catch (e: any) {
-      await dialog.error({title: "에러", message: `${e}`})
+      await dialog.error({ title: "에러", message: `${e}` });
     } finally {
       setRunData(false);
     }
@@ -77,10 +179,10 @@ export default function PrereqSetupView({
       if (res?.ok) {
         onRefresh();
       } else {
-        await dialog.error({title: "학생 정보 파일 생성 실패", message: res?.error, detail: res?.detail});
+        await dialog.error({ title: "학생 정보 파일 생성 실패", message: res?.error, detail: res?.detail });
       }
     } catch (e: any) {
-      await dialog.error({title: "에러", message: `${e}`})
+      await dialog.error({ title: "에러", message: `${e}` });
     } finally {
       setRunStudent(false);
     }
@@ -90,35 +192,32 @@ export default function PrereqSetupView({
     try {
       const res = await rpc.call("change_data_dir", {});
       if (res?.ok) {
-        await dialog.confirm({title: "성공", message: "데이터 저장 위치를 변경하였습니다."})
-      } else {
-        if (res?.error){
-          await dialog.error({title: "데이터 저장 위치 변경 실패", message: res?.error, detail: res?.detail});
-        }
+        await dialog.confirm({ title: "성공", message: "데이터 저장 위치를 변경하였습니다." });
+      } else if (res?.error) {
+        await dialog.error({ title: "데이터 저장 위치 변경 실패", message: res?.error, detail: res?.detail });
       }
     } catch (e: any) {
-      await dialog.error({title: "에러", message: `${e}`})
+      await dialog.error({ title: "에러", message: `${e}` });
     } finally {
       onRefresh();
     }
-  }
+  };
 
   const changeDataFileNameBySelect = async () => {
     try {
       const res = await rpc.call("change_data_file_name_by_select", {});
       if (res?.ok) {
-        await dialog.confirm({title: "성공", message: "데이터 파일 이름을 변경하였습니다."})
-      } else if (!res?.ok && res.error){
-        await dialog.error({title: "데이터 파일 이름 변경 실패", message: res?.error || "", detail: res?.detail });
+        await dialog.confirm({ title: "성공", message: "데이터 파일 이름을 변경하였습니다." });
+      } else if (!res?.ok && res.error) {
+        await dialog.error({ title: "데이터 파일 이름 변경 실패", message: res?.error || "", detail: res?.detail });
       }
     } catch (e: any) {
-      await dialog.error({title: "에러", message: `${e}`})
+      await dialog.error({ title: "에러", message: `${e}` });
     } finally {
       onRefresh();
     }
-  }
+  };
 
-  // 공통 타일
   const Tile = ({
     title,
     present,
@@ -132,7 +231,7 @@ export default function PrereqSetupView({
     disabled?: boolean;
     running?: boolean;
   }) => {
-    const label = present ? "생성 완료" : running ? "생성 중…" : "생성";
+    const label = present ? "생성 완료" : running ? "생성 중..." : "생성";
     return (
       <Card className="rounded-2xl border-border/80 shadow-sm">
         <CardContent className="flex h-44 flex-col justify-between pt-4">
@@ -173,28 +272,46 @@ export default function PrereqSetupView({
             )}
           </p>
           {state.data_dir_valid === false && (
-            <p className="mt-2 text-sm text-amber-600">데이터 저장 위치가 유효하지 않습니다. 데이터 저장 위치를 변경해주세요.</p>
+            <p className="mt-2 text-sm text-amber-600">데이터 저장 위치가 유효하지 않습니다. 데이터 저장 위치를 변경해 주세요.</p>
           )}
         </div>
         <Separator className="mb-4" />
 
+        <div className="mb-4 space-y-2">
+          <Label htmlFor="prereq-url">아이소식 스크립트 URL</Label>
+          <p className="mt-1 text-sm text-muted-foreground">
+            아이소식 스크립트 주소 복사 방법: 아이소식 메뉴 {'>'} 스크립트 버튼 우클릭 {'>'} 링크 주소 복사
+          </p>
+          <div className="flex items-center gap-2">
+            <Input
+              id="prereq-url"
+              className="rounded-xl"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://..."
+              disabled={loadingUrl || savingUrl}
+            />
+            <Button className="rounded-xl" onClick={saveConfigUrl} disabled={loadingUrl || savingUrl}>
+              {savingUrl && <Spinner />}
+              URL 저장
+            </Button>
+            <Button variant="outline" className="rounded-xl" onClick={openConfigUrl} disabled={loadingUrl || savingUrl}>
+              URL 열기
+            </Button>
+          </div>
+        </div>
+
         <div className="text-sm text-foreground items-end gap-2">
           <span>
-            {"사용 중인 데이터 파일과 저장된 이름이 다른가요? "}
+            {"사용 중인 데이터파일과 저장된 이름이 다른가요? "}
             <button onClick={changeDataFileNameBySelect}>
               <b className="underline cursor-pointer">여기를 클릭하여 데이터 파일 선택하기</b>
-              </button>
+            </button>
           </span>
-
         </div>
 
         <div className="h-full grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-3">
-          <Tile
-            title="반 정보.xlsx"
-            present={state.has_class}
-            onInstall={installClass}
-            running={runClass}
-          />
+          <Tile title="반 정보.xlsx" present={state.has_class} onInstall={installClass} running={runClass} />
           <ChevronsRight className="mx-1 h-5 w-5 text-muted-foreground" />
           <Tile
             title="데이터 파일.xlsx"
@@ -215,7 +332,8 @@ export default function PrereqSetupView({
 
         <div className="mt-auto flex items-center justify-between">
           <div className="text-xs text-muted-foreground">
-            부족: {state.missing.length === 0 ? "없음" : state.missing.join(" | ")}
+            <div>부족: {state.missing.length === 0 ? "없음" : state.missing.join(" | ")}</div>
+            <div className="mt-1">현재 데이터 저장 위치: {state.data_dir}</div>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" className="rounded-xl" onClick={changeDataDir}>

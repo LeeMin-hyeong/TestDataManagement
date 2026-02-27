@@ -42,6 +42,19 @@ export default function EditMessageConfigView() {
       return;
     }
 
+    const validateRes = await rpc.call("validate_script_url", { url });
+    if (!validateRes?.ok) {
+      await dialog.error({ title: "URL 검증 실패", message: validateRes?.error || "URL을 검증하지 못했습니다." });
+      return;
+    }
+    if (validateRes?.warning) {
+      const proceed = await dialog.warning({
+        title: "URL 경고",
+        message: "URL이 정확하지 않은 것 같습니다. 계속 진행하시겠습니까?",
+      });
+      if (!proceed) return;
+    }
+
     setSaving(true);
     try {
       const res = await rpc.call("update_message_templates", {
