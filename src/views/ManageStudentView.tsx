@@ -77,9 +77,16 @@ const buildStudentsByClass = (
   datafileMap: ClassStudentDict,
   aisosicMap: AisosicClassStudentDict
 ) => {
-  const dataClassNames = Object.keys(datafileMap);
-  const aisosicClassNames = Object.keys(aisosicMap);
-  const classNames = Array.from(new Set([...dataClassNames, ...aisosicClassNames])).sort();
+  const dataClassNames = Object.keys(datafileMap).sort();
+  const dataClassSet = new Set(dataClassNames);
+  const filteredAisosicMap: AisosicClassStudentDict = {};
+  Object.entries(aisosicMap).forEach(([className, students]) => {
+    if (dataClassSet.has(className)) {
+      filteredAisosicMap[className] = students;
+    }
+  });
+  const aisosicClassNames = Object.keys(filteredAisosicMap);
+  const classNames = dataClassNames;
 
   const dataClassesByStudent = new Map<string, Set<string>>();
   dataClassNames.forEach((className) => {
@@ -92,7 +99,7 @@ const buildStudentsByClass = (
 
   const aisosicClassesByStudent = new Map<string, Set<string>>();
   aisosicClassNames.forEach((className) => {
-    (aisosicMap[className] || []).forEach((studentName) => {
+    (filteredAisosicMap[className] || []).forEach((studentName) => {
       const name = String(studentName);
       if (!name) return;
       const next = aisosicClassesByStudent.get(name) ?? new Set<string>();
@@ -171,7 +178,7 @@ const buildStudentsByClass = (
   });
 
   classNames.forEach((className) => {
-    const aisosicStudents = aisosicMap[className] || [];
+    const aisosicStudents = filteredAisosicMap[className] || [];
     aisosicStudents.forEach((name, index) => {
       const studentName = String(name);
       if (!studentName) return;
